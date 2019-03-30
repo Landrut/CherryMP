@@ -28,7 +28,7 @@ namespace CherryMPServer
 
         public static long GetTicks()
         {
-            return DateTime.Now.Ticks / 10000;
+            return DateTime.Now.Ticks/10000;
         }
 
         public static void ToFile(string path, string str)
@@ -120,7 +120,7 @@ namespace CherryMPServer
             }
 
             var settings = ServerSettings.ReadSettings(Program.Location + "settings.xml");
-
+            
             _log = settings.LogToFile;
 
             if (_log)
@@ -129,7 +129,7 @@ namespace CherryMPServer
             ParseableVersion serverVersion = ParseableVersion.FromAssembly(Assembly.GetExecutingAssembly());
 
             Console.WriteLine("=======================================================================");
-            Console.WriteLine("= CHERRY MULTIPLAYER SERVER v{0}", serverVersion);
+            Console.WriteLine("= Cherry Multiplayer Server v{0}", serverVersion);
             Console.WriteLine("=======================================================================");
             Console.WriteLine("= Server Name: " + settings.Name);
             Console.WriteLine("= Server Port: " + settings.Port);
@@ -160,11 +160,11 @@ namespace CherryMPServer
 
             Output("Started! Waiting for connections.");
 
-
+ 
             while (!CloseProgram)
             {
                 ServerInstance.Tick();
-                Thread.Sleep(1000 / settings.RefreshHz);
+                Thread.Sleep(1000/settings.RefreshHz);
             }
 
         }

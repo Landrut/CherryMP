@@ -28,7 +28,7 @@ namespace CherryMPServer
 
             for (int i = 0; i < len; i++)
             {
-                sb.Append((char)_randObj.Next(65, 123));
+                sb.Append((char) _randObj.Next(65, 123));
             }
 
             return sb.ToString();
@@ -54,7 +54,7 @@ namespace CherryMPServer
         public static void UpdatePlayer(Client player)
         {
             var data = new PedData();
-
+            
             if (player.Position == null) player.Position = Vector3.RandomXY() * 3000f * (float)_randObj.NextDouble();
             data.Position = player.Position;
             player.LastUpdate = DateTime.Now;
@@ -62,14 +62,14 @@ namespace CherryMPServer
             data.NetHandle = player.handle.Value;
             data.PedArmor = 0;
             data.Flag = 0;
-            data.PedModelHash = (int)PedHash.Michael;
+            data.PedModelHash = (int) PedHash.Michael;
             data.PlayerHealth = 100;
             data.Quaternion = new Vector3();
             data.Speed = 0;
             data.Velocity = new Vector3();
             data.WeaponHash = (int)WeaponHash.Unarmed;
             data.Latency = 0.1f;
-
+            
             Program.ServerInstance.ResendPacket(data, player, true);
 
             if (Environment.TickCount - player.GameVersion > 1500)

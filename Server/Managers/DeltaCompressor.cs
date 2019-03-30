@@ -24,8 +24,8 @@ namespace CherryMPServer.Managers
             }
             else if (LastPacketReceived is PedData && compressedPacket is PedData)
             {
-                var fullPacket = (PedData)LastPacketReceived;
-                var compPacket = (PedData)compressedPacket;
+                var fullPacket = (PedData) LastPacketReceived;
+                var compPacket = (PedData) compressedPacket;
 
                 if (compPacket.PedModelHash != null) fullPacket.PedModelHash = compPacket.PedModelHash;
                 if (compPacket.Position != null) fullPacket.Position = compPacket.Position;
@@ -97,7 +97,7 @@ namespace CherryMPServer.Managers
                 {
                     var compressed = new VehicleData();
                     compressed.NetHandle = netHandle;
-                    compressed.VehicleHandle = ((VehicleData)fullPacket).VehicleHandle;
+                    compressed.VehicleHandle = ((VehicleData) fullPacket).VehicleHandle;
                     compressed.Position = full.Position;
                     compressed.Quaternion = full.Quaternion;
                     return compressed;

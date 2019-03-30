@@ -55,8 +55,8 @@ namespace CherryMPServer.Managers
         {
             Get["/{resource}/{path*}"] = parameters =>
             {
-                if (!ExportedFiles.ContainsKey((string)parameters.resource) ||
-                    !ExportedFiles[(string)parameters.resource].Contains(parameters.path))
+                if (!ExportedFiles.ContainsKey((string) parameters.resource) ||
+                    !ExportedFiles[(string) parameters.resource].Contains(parameters.path))
                     return 404;
 
                 string fullFile = Path.Combine("resources" + Path.DirectorySeparatorChar + parameters.resource, parameters.path);
@@ -72,7 +72,7 @@ namespace CherryMPServer.Managers
 
             Get["/manifest.json"] = _ =>
             {
-                var resp = (Response)JsonConvert.SerializeObject(new FileManifest()
+                var resp = (Response) JsonConvert.SerializeObject(new FileManifest()
                 {
                     exportedFiles = new Dictionary<string, List<FileDeclaration>>(ExportedFiles)
                 });

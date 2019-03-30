@@ -20,7 +20,7 @@ namespace CherryMPServer
 
         public Dictionary<int, EntityProperties> ToDict()
         {
-            return ServerEntities;
+                return ServerEntities;
         }
 
         public Dictionary<int, EntityProperties> ToCopy()
@@ -53,7 +53,7 @@ namespace CherryMPServer
 
                     pair.Value.Position = Vector3.Lerp(pair.Value.PositionMovement.StartVector,
                         pair.Value.PositionMovement.EndVector,
-                        Math.Min(((float)delta) / pair.Value.PositionMovement.Duration, 1f));
+                        Math.Min(((float) delta) / pair.Value.PositionMovement.Duration, 1f));
 
                     if (delta >= pair.Value.PositionMovement.Duration)
                         pair.Value.PositionMovement = null;
@@ -127,9 +127,9 @@ namespace CherryMPServer
 
             if (model == (int)VehicleHash.Taxi)
                 obj.VehicleComponents = 1 << 5;
-            else if (model == (int)VehicleHash.Police)
+            else if (model == (int) VehicleHash.Police)
                 obj.VehicleComponents = 1 << 2;
-            else if (model == (int)VehicleHash.Skylift)
+            else if (model == (int) VehicleHash.Skylift)
                 obj.VehicleComponents = -1537;
             else
                 obj.VehicleComponents = ~0;
@@ -143,7 +143,7 @@ namespace CherryMPServer
             }
 
             var packet = new CreateEntity();
-            packet.EntityType = (byte)EntityType.Vehicle;
+            packet.EntityType = (byte) EntityType.Vehicle;
             packet.NetHandle = localEntityHash;
             packet.Properties = obj;
             Program.ServerInstance.SendToAll(packet, PacketType.CreateEntity, true, ConnectionChannel.NativeCall);
@@ -283,7 +283,7 @@ namespace CherryMPServer
             }
 
             var packet = new CreateEntity();
-            packet.EntityType = (byte)EntityType.Blip;
+            packet.EntityType = (byte) EntityType.Blip;
             packet.Properties = obj;
             packet.NetHandle = localEntityHash;
 
@@ -323,7 +323,7 @@ namespace CherryMPServer
         public int CreateMarker(int markerType, Vector3 pos, Vector3 dir, Vector3 rot, Vector3 scale, int alpha, int r, int g, int b, int dimension)
         {
             int localEntityHash;
-
+            
             var obj = new MarkerProperties()
             {
                 MarkerType = markerType,
@@ -331,12 +331,12 @@ namespace CherryMPServer
                 Direction = dir,
                 Rotation = rot,
                 Scale = scale,
-                Alpha = (byte)alpha,
+                Alpha = (byte) alpha,
                 Red = r,
                 Green = g,
                 Blue = b,
                 Dimension = dimension,
-                EntityType = (byte)EntityType.Marker,
+                EntityType = (byte) EntityType.Marker,
             };
 
             lock (ServerEntities)
@@ -469,9 +469,9 @@ namespace CherryMPServer
 
                 ServerEntities.Add(localHan, new PlayerProperties()
                 {
-                    EntityType = (byte)EntityType.Player,
+                    EntityType = (byte) EntityType.Player,
                     BlipSprite = 1,
-                    ModelHash = (int)PedHash.Clown01SMY,
+                    ModelHash = (int) PedHash.Clown01SMY,
                     BlipAlpha = 255,
                     Alpha = 255,
                 });

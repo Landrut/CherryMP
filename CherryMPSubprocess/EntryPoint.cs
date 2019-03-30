@@ -106,7 +106,7 @@ namespace CherryMP
             #region Check for dependencies
             if (!Environment.Is64BitOperatingSystem)
             {
-                MessageBox.Show(splashScreen.SplashScreen, "GTA Network does not work on 32bit machines.", "Incompatible");
+                MessageBox.Show(splashScreen.SplashScreen, "Cherry Multiplayer does not work on 32bit machines.", "Incompatible");
                 return;
             }
 
@@ -211,7 +211,7 @@ namespace CherryMP
                     {
                         var updateResult =
                             MessageBox.Show(splashScreen.SplashScreen,
-                                "New GTA Network Dependency Update is available! Download now?\n\nUpdate Version: " +
+                                "New Cherry Multiplayer Dependency Update is available! Download now?\n\nUpdate Version: " +
                                 lastVersion + "\nInstalled Version: " + shvVersion, "Update Available",
                                 MessageBoxButtons.YesNo);
 
@@ -247,9 +247,9 @@ namespace CherryMP
             #region Check for new client version
 
             /*ParseableVersion fileVersion = new ParseableVersion(0, 0, 0, 0);
-            if (File.Exists(GTANFolder + "bin" + "\\" + "scripts" + "\\" + "GTANetwork.dll"))
+            if (File.Exists(GTANFolder + "bin" + "\\" + "scripts" + "\\" + "CherryMP.dll"))
             {
-                fileVersion = ParseableVersion.Parse(FileVersionInfo.GetVersionInfo(GTANFolder + "bin" + "\\" + "scripts" + "\\" + "GTANetwork.dll").FileVersion);
+                fileVersion = ParseableVersion.Parse(FileVersionInfo.GetVersionInfo(GTANFolder + "bin" + "\\" + "scripts" + "\\" + "CherryMP.dll").FileVersion);
             }*/
 
             splashScreen.SetPercent(30);
@@ -262,7 +262,7 @@ namespace CherryMP
                     {
                         var updateResult =
                             MessageBox.Show(splashScreen.SplashScreen,
-                                "New GTA Network Client Update is available! Download now?\n\nUpdate Version: " +
+                                "New Cherry Multiplayer Client Update is available! Download now?\n\nUpdate Version: " +
                                 lastVersion + "\nInstalled Version: " + fileVersion, "Update Available",
                                 MessageBoxButtons.YesNo);
 

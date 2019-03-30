@@ -119,10 +119,10 @@ namespace CherryMP.GUI
             if (!Visible) return;
             var col = Focused ? Hovered ? Active ? Color.FromArgb(200, 255, 255, 255) : Color.FromArgb(100, 50, 50, 50) : Active ? Color.FromArgb(200, 255, 255, 255) : Color.FromArgb(200, 0, 0, 0) : Color.FromArgb(100, 0, 0, 0);
             new UIResRectangle(Position, Size, col).Draw();
-            new UIResText(Text, Position + new Size(Size.Width/2, 5), 0.45f, Focused ? Active ? Color.Black : Color.White : Color.White, GTA.UI.Font.ChaletComprimeCologne, UIResText.Alignment.Centered).Draw();
+            new UIResText(Text, Position + new Size(Size.Width/2, 5), 0.35f, Focused ? Active ? Color.Black : Color.White : Color.White, GTA.UI.Font.ChaletLondon, UIResText.Alignment.Centered).Draw();
             if (Active)
             {
-                new UIResRectangle(Position.SubtractPoints(new Point(0, 5)), new Size(Size.Width, 5), Focused ? Color.DarkRed : Color.FromArgb(50, Color.DarkRed)).Draw();
+                new UIResRectangle(Position.SubtractPoints(new Point(0, 5)), new Size(Size.Width, 5), Focused ? Color.DodgerBlue : Color.FromArgb(50, Color.DodgerBlue)).Draw();
             }
         }
     }

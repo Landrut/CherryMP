@@ -697,10 +697,10 @@ namespace CherryMP.Javascript
             return Main.CameraManager.GetActive();
         }
 
-        public void setCameraShake(GlobalCamera cam, string shakeType, double amplitute)
+        public void setCameraShake(GlobalCamera cam, string shakeType, float amplitute)
         {
             cam.Shake = shakeType;
-            cam.ShakeAmp = (float)amplitute;
+            cam.ShakeAmp = amplitute;
 
             if (cam.CamObj != null && cam.Active)
             {
@@ -754,13 +754,13 @@ namespace CherryMP.Javascript
             return cam.Rotation;
         }
 
-        public void setCameraFov(GlobalCamera cam, double fov)
+        public void setCameraFov(GlobalCamera cam, float fov)
         {
-            cam.Fov = (float)fov;
+            cam.Fov = fov;
 
             if (cam.CamObj != null && cam.Active)
             {
-                cam.CamObj.FieldOfView = (float)fov;
+                cam.CamObj.FieldOfView = fov;
             }
         }
 
@@ -1515,16 +1515,18 @@ namespace CherryMP.Javascript
             return Main._playerGodMode;
         }
 
-        public void createParticleEffectOnPosition(string ptfxLibrary, string ptfxName, Vector3 position, Vector3 rotation, double scale)
+        public void createParticleEffectOnPosition(string ptfxLibrary, string ptfxName, Vector3 position,
+            Vector3 rotation, float scale)
         {
             Util.Util.LoadPtfxAsset(ptfxLibrary);
             Function.Call(Hash.USE_PARTICLE_FX_ASSET, ptfxLibrary);
             Function.Call((Hash) 0x25129531F77B9ED3, ptfxName, position.X, position.Y, position.Z, rotation.X,
                 rotation.Y, rotation.Z,
-                (float)scale, 0, 0, 0);
+                scale, 0, 0, 0);
         }
 
-        public void createParticleEffectOnEntity(string ptfxLibrary, string ptfxName, LocalHandle entity, Vector3 offset, Vector3 rotation, double scale, int boneIndex = -1)
+        public void createParticleEffectOnEntity(string ptfxLibrary, string ptfxName, LocalHandle entity, Vector3 offset,
+            Vector3 rotation, float scale, int boneIndex = -1)
         {
             Util.Util.LoadPtfxAsset(ptfxLibrary);
             Function.Call(Hash.USE_PARTICLE_FX_ASSET, ptfxLibrary);
@@ -1533,7 +1535,7 @@ namespace CherryMP.Javascript
             {
                 Function.Call((Hash) 0x0D53A3B8DA0809D2, ptfxName, entity.Value, offset.X, offset.Y, offset.Z,
                     rotation.X, rotation.Y, rotation.Z,
-                    (float)scale, 0, 0, 0);
+                    scale, 0, 0, 0);
             }
             else
             {
@@ -1543,25 +1545,25 @@ namespace CherryMP.Javascript
             }
         }
 
-        public void createExplosion(int explosionType, Vector3 position, double damageScale)
+        public void createExplosion(int explosionType, Vector3 position, float damageScale)
         {
-            Function.Call((Hash) 0xE3AD2BDBAEE269AC, position.X, position.Y, position.Z, explosionType, (float)damageScale,
+            Function.Call((Hash) 0xE3AD2BDBAEE269AC, position.X, position.Y, position.Z, explosionType, damageScale,
                 true, false);
         }
 
-        public void createOwnedExplosion(LocalHandle owner, int explosionType, Vector3 position, double damageScale)
+        public void createOwnedExplosion(LocalHandle owner, int explosionType, Vector3 position, float damageScale)
         {
-            Function.Call((Hash)0x172AA1B624FA1013, owner.Value, position.X, position.Y, position.Z, explosionType, (float)damageScale, true, false, 1f);
+            Function.Call((Hash)0x172AA1B624FA1013, owner.Value, position.X, position.Y, position.Z, explosionType, damageScale, true, false, 1f);
         }
 
-        public void createProjectile(int weapon, Vector3 start, Vector3 target, int damage, double speed = -1, int dimension = 0)
+        public void createProjectile(int weapon, Vector3 start, Vector3 target, int damage, float speed = -1, int dimension = 0)
         {
-            Function.Call(Hash.SHOOT_SINGLE_BULLET_BETWEEN_COORDS, start.X, start.Y, start.Z, target.X, target.Y, target.Z, damage, 1, weapon, null, true, false, (float)speed);
+            Function.Call(Hash.SHOOT_SINGLE_BULLET_BETWEEN_COORDS, start.X, start.Y, start.Z, target.X, target.Y, target.Z, damage, 1, (int)weapon, null, true, false, speed);
         }
 
-        public void createOwnedProjectile(LocalHandle owner, int weapon, Vector3 start, Vector3 target, int damage, double speed = -1, int dimension = 0)
+        public void createOwnedProjectile(LocalHandle owner, int weapon, Vector3 start, Vector3 target, int damage, float speed = -1, int dimension = 0)
         {
-            Function.Call(Hash.SHOOT_SINGLE_BULLET_BETWEEN_COORDS, start.X, start.Y, start.Z, target.X, target.Y, target.Z, damage, 1, weapon, owner.Value, true, false, (float)speed);
+            Function.Call(Hash.SHOOT_SINGLE_BULLET_BETWEEN_COORDS, start.X, start.Y, start.Z, target.X, target.Y, target.Z, damage, 1, (int)weapon, owner.Value, true, false, speed);
         }
 
         public void setVehicleLivery(LocalHandle vehicle, int livery)
@@ -2089,9 +2091,9 @@ namespace CherryMP.Javascript
             return getVehicleMod(vehicle, 69);
         }
 
-        public void setVehicleEnginePowerMultiplier(LocalHandle vehicle, double mult)
+        public void setVehicleEnginePowerMultiplier(LocalHandle vehicle, float mult)
         {
-            setVehicleMod(vehicle, 70, BitConverter.ToInt32(BitConverter.GetBytes((float)mult), 0));
+            setVehicleMod(vehicle, 70, BitConverter.ToInt32(BitConverter.GetBytes(mult), 0));
         }
 
         public float getVehicleEnginePowerMultiplier(LocalHandle vehicle)
@@ -2099,9 +2101,9 @@ namespace CherryMP.Javascript
             return BitConverter.ToSingle(BitConverter.GetBytes(getVehicleMod(vehicle, 70)), 0);
         }
 
-        public void setVehicleEngineTorqueMultiplier(LocalHandle vehicle, double mult)
+        public void setVehicleEngineTorqueMultiplier(LocalHandle vehicle, float mult)
         {
-            setVehicleMod(vehicle, 71, BitConverter.ToInt32(BitConverter.GetBytes((float)mult), 0));
+            setVehicleMod(vehicle, 71, BitConverter.ToInt32(BitConverter.GetBytes(mult), 0));
         }
 
         public float getVehicleEngineTorqueMultiplier(LocalHandle vehicle)
@@ -2159,37 +2161,37 @@ namespace CherryMP.Javascript
         public string getVehicleDisplayName(int model)
         {
             return Function.Call<string>(Hash._GET_LABEL_TEXT,
-                Function.Call<string>(Hash.GET_DISPLAY_NAME_FROM_VEHICLE_MODEL, model));
+                Function.Call<string>(Hash.GET_DISPLAY_NAME_FROM_VEHICLE_MODEL, (int) model));
         }
 
         public float getVehicleMaxSpeed(int model)
         {
-            return Function.Call<float>((Hash)0xF417C2502FFFED43, model);
+            return Function.Call<float>((Hash)0xF417C2502FFFED43, (int)model);
         }
 
         public float getVehicleMaxBraking(int model)
         {
-            return Function.Call<float>((Hash)0xDC53FD41B4ED944C, model);
+            return Function.Call<float>((Hash)0xDC53FD41B4ED944C, (int)model);
         }
 
         public float getVehicleMaxTraction(int model)
         {
-            return Function.Call<float>((Hash)0x539DE94D44FDFD0D, model);
+            return Function.Call<float>((Hash)0x539DE94D44FDFD0D, (int)model);
         }
 
         public float getVehicleMaxAcceleration(int model)
         {
-            return Function.Call<float>((Hash)0x8C044C5C84505B6A, model);
+            return Function.Call<float>((Hash)0x8C044C5C84505B6A, (int)model);
         }
 
         public float getVehicleMaxOccupants(int model)
         {
-            return Function.Call<int>(Hash.GET_VEHICLE_MAX_NUMBER_OF_PASSENGERS, model);
+            return Function.Call<int>(Hash.GET_VEHICLE_MAX_NUMBER_OF_PASSENGERS, (int)model);
         }
 
         public int getVehicleClass(int model)
         {
-            return Function.Call<int>(Hash.GET_VEHICLE_CLASS_FROM_NAME, model);
+            return Function.Call<int>(Hash.GET_VEHICLE_CLASS_FROM_NAME, (int)model);
         }
 
         public void detonatePlayerStickies()
@@ -3296,15 +3298,15 @@ namespace CherryMP.Javascript
             return 0;
         }
 
-        public LocalHandle createVehicle(int model, Vector3 pos, Vector3 rot)
+        public LocalHandle createVehicle(int model, Vector3 pos, float heading = 0f)
         {
-            var car = Main.NetEntityHandler.CreateLocalVehicle(model, pos, rot.Z);
+            var car = Main.NetEntityHandler.CreateLocalVehicle(model, pos, heading);
             return new LocalHandle(car, HandleType.LocalHandle);
         }
 
-        public LocalHandle createPed(int model, Vector3 pos, Vector3 rot)
+        public LocalHandle createPed(int model, Vector3 pos, float heading = 0f)
         {
-            var ped = Main.NetEntityHandler.CreateLocalPed(model, pos, rot.Z);
+            var ped = Main.NetEntityHandler.CreateLocalPed(model, pos, heading);
             return new LocalHandle(ped, HandleType.LocalHandle);
         }
 
@@ -3461,12 +3463,17 @@ namespace CherryMP.Javascript
                 new Blip(blip.Value).ShowRoute = show;
             }
         }
-
+        
         public void setBlipScale(LocalHandle blip, double scale)
         {
+            setBlipScale(blip, (float) scale);
+        }
+
+        public void setBlipScale(LocalHandle blip, float scale)
+        {
             if (blip.Properties<IStreamedItem>() == null || blip.Properties<RemoteBlip>().StreamedIn)
-                new Blip(blip.Value).Scale = (float)scale;
-            blip.Properties<RemoteBlip>().Scale = (float)scale;
+                new Blip(blip.Value).Scale = scale;
+            blip.Properties<RemoteBlip>().Scale = scale;
         }
 
         public float getBlipScale(LocalHandle blip)
@@ -3661,9 +3668,9 @@ namespace CherryMP.Javascript
             return (from.Properties<IStreamedItem>().AttachedTo?.NetHandle ?? 0) == to.Properties<IStreamedItem>().RemoteHandle;
         }
 
-        public LocalHandle createTextLabel(string text, Vector3 pos, double range, double size, bool entitySeethrough = false)
+        public LocalHandle createTextLabel(string text, Vector3 pos, float range, float size, bool entitySeethrough = false)
         {
-            return new LocalHandle(Main.NetEntityHandler.CreateLocalLabel(text, pos.ToVector(), (float)range, (float)size, entitySeethrough, 0), HandleType.LocalHandle);
+            return new LocalHandle(Main.NetEntityHandler.CreateLocalLabel(text, pos.ToVector(), range, size, entitySeethrough, 0), HandleType.LocalHandle);
         }
 
         internal string getResourceFilePath(string fileName)
@@ -3828,22 +3835,22 @@ namespace CherryMP.Javascript
             return Function.Call<bool>(Hash.IS_ENTITY_AN_OBJECT, ent.Value);
         }
 
-        //public float toFloat(double d)
-        //{
-        //    return (float) d;
-        //}
+        public float toFloat(double d)
+        {
+            return (float) d;
+        }
 
-        internal struct fArg
+        public struct fArg
         {
             public float Value;
 
             public fArg(double f)
             {
-                Value = (float)f;
+                Value = (float) f;
             }
         }
 
-        internal fArg f(double value)
+        public fArg f(double value)
         {
             return new fArg(value);
         }
@@ -4367,9 +4374,9 @@ namespace CherryMP.Javascript
             return Game.GetDisabledControlNormal(0, (GTA.Control)control);
         }
 
-        public void setControlNormal(int control, double value)
+        public void setControlNormal(int control, float value)
         {
-            Game.SetControlNormal(0, (GTA.Control)control, (float)value);
+            Game.SetControlNormal(0, (GTA.Control)control, value);
         }
 
         public bool isChatOpen()

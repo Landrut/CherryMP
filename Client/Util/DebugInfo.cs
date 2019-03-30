@@ -16,7 +16,7 @@ namespace CherryMP.Util
 
         public static void Draw()
         {
-            if (FPS) Util.DrawText(Game.FPS.ToString("FPS: 0"), UIMenu.GetScreenResolutionMantainRatio().Width - 50, 0, 0.35f, 255, 255, 255, 255, 0, 1, false, true, 0);
+            if (FPS) Util.DrawText(Game.FPS.ToString("0"), UIMenu.GetScreenResolutionMantainRatio().Width - 20, 0, 0.35f, 255, 255, 255, 255, 0, 1, false, true, 0);
 
             if (StreamerDebug)
             {

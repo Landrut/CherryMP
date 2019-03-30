@@ -69,7 +69,7 @@ namespace CherryMP.Networking
         private bool _lastBurnout;
         private bool _lastSwimming;
         internal float VehicleRPM;
-        internal float SteeringScale;
+	    internal float SteeringScale;
         internal bool EnteringVehicle;
         private bool _lastEnteringVehicle;
         internal bool IsOnFire;
@@ -131,7 +131,7 @@ namespace CherryMP.Networking
         internal bool IsSpectating;
 
         internal bool Debug;
-
+        
         private DateTime _stopTime;
         internal float Speed
         {
@@ -159,7 +159,7 @@ namespace CherryMP.Networking
             {
                 if (_lastUpdateReceived != 0)
                 {
-                    _latencyAverager.Enqueue(value - _lastUpdateReceived);
+                    _latencyAverager.Enqueue(value -_lastUpdateReceived);
                     if (_latencyAverager.Count >= 10)
                         _latencyAverager.Dequeue();
                 }
@@ -214,7 +214,7 @@ namespace CherryMP.Networking
             set
             {
                 _lastVehVel = _vehicleVelocity;
-                _vehicleVelocity = value;
+                _vehicleVelocity = value; 
             }
         }
 
@@ -292,7 +292,7 @@ namespace CherryMP.Networking
         private bool _playingGetupAnim;
         private DateTime _lastHornPress = DateTime.Now;
         private DateTime? _spazzout_prevention;
-
+        
         private DateTime _enterVehicleStarted;
         private Dictionary<int, int> _vehicleMods;
         private Dictionary<int, int> _pedProps;
@@ -330,7 +330,7 @@ namespace CherryMP.Networking
             _rotation = rot;
             ModelHash = hash;
             _blip = blip;
-
+            
             _latencyAverager = new Queue<long>();
         }
 
@@ -357,7 +357,7 @@ namespace CherryMP.Networking
                 }
 
 
-                _isInVehicle = value;
+                _isInVehicle = value; 
             }
         }
 
@@ -395,18 +395,10 @@ namespace CherryMP.Networking
 
         #region NeoSyncPed
 
-        internal bool CreateCharacter()
+
+        bool CreateCharacter()
         {
-            float hRange = _isInVehicle ? 150f : 200f;
             var gPos = Position;
-            var inRange = Game.Player.Character.IsInRangeOfEx(gPos, hRange);
-
-            return CreateCharacter(gPos, inRange);
-        }
-
-        bool CreateCharacter(Vector3 gPos, bool InRange)
-        {
-
             if ((Character == null || !Character.Exists()) || (Character.Model.Hash != ModelHash || (Character.IsDead && PedHealth > 0)))
             {
                 LogManager.DebugLog($"{Character == null}, {Character?.Exists()}, {Character?.Position} {gPos}, {Character?.Model.Hash}, {ModelHash}, {Character?.IsDead}, {PedHealth}");
@@ -417,86 +409,86 @@ namespace CherryMP.Networking
                     Character.Delete();
                 }
 
-                DEBUG_STEP = 3;
+                 DEBUG_STEP = 3;
 
-                LogManager.DebugLog("NEW PLAYER " + Name);
+				LogManager.DebugLog("NEW PLAYER " + Name);
 
-                var charModel = new Model(ModelHash);
+				var charModel = new Model(ModelHash);
 
-                LogManager.DebugLog("REQUESTING MODEL FOR " + Name);
+				LogManager.DebugLog("REQUESTING MODEL FOR " + Name);
 
-                Util.Util.LoadModel(charModel);
+				Util.Util.LoadModel(charModel);
 
-                LogManager.DebugLog("CREATING PED FOR " + Name);
+				LogManager.DebugLog("CREATING PED FOR " + Name);
 
-                Character = World.CreatePed(charModel, gPos, _rotation.Z, 26);
-                charModel.MarkAsNoLongerNeeded();
+			    Character = World.CreatePed(charModel, gPos, _rotation.Z, 26);
+				charModel.MarkAsNoLongerNeeded();
 
-                if (Character == null) return true;
+				if (Character == null) return true;
 
                 lock (Main.NetEntityHandler.ClientMap) Main.NetEntityHandler.HandleMap.Set(RemoteHandle, Character.Handle);
 
-                Character.CanBeTargetted = true;
+			    Character.CanBeTargetted = true;
 
 
-                DEBUG_STEP = 4;
+				DEBUG_STEP = 4;
 
-                Character.BlockPermanentEvents = true;
+				Character.BlockPermanentEvents = true;
                 Function.Call(Hash.TASK_SET_BLOCKING_OF_NON_TEMPORARY_EVENTS, Character, true);
-                Character.IsInvincible = true;
-                Character.CanRagdoll = false;
+				Character.IsInvincible = true;
+				Character.CanRagdoll = false;
 
-                if (Team == -1 || Team != Main.LocalTeam)
-                {
-                    Character.RelationshipGroup = Main.RelGroup;
+			    if (Team == -1 || Team != Main.LocalTeam)
+			    {
+			        Character.RelationshipGroup = Main.RelGroup;
                     Function.Call(Hash.SET_PED_RELATIONSHIP_GROUP_DEFAULT_HASH, Character, Main.RelGroup);
-                }
-                else
-                {
-                    Character.RelationshipGroup = Main.FriendRelGroup;
+			    }
+			    else
+			    {
+			        Character.RelationshipGroup = Main.FriendRelGroup;
                     Function.Call(Hash.SET_PED_RELATIONSHIP_GROUP_DEFAULT_HASH, Character, Main.FriendRelGroup);
                 }
 
-                LogManager.DebugLog("SETTINGS FIRING PATTERN " + Name);
+				LogManager.DebugLog("SETTINGS FIRING PATTERN " + Name);
 
-                Character.FiringPattern = FiringPattern.FullAuto;
+				Character.FiringPattern = FiringPattern.FullAuto;
 
-                Function.Call(Hash.SET_PED_DEFAULT_COMPONENT_VARIATION, Character); //BUG: <- Maybe causes crash?
+				Function.Call(Hash.SET_PED_DEFAULT_COMPONENT_VARIATION, Character); //BUG: <- Maybe causes crash?
 
                 Function.Call(Hash.SET_PED_CAN_EVASIVE_DIVE, Character, false);
                 Function.Call(Hash.SET_PED_DROPS_WEAPONS_WHEN_DEAD, Character, false);
-
+                
                 Function.Call(Hash.SET_PED_CAN_BE_TARGETTED, Character, true);
                 Function.Call(Hash.SET_PED_CAN_BE_TARGETTED_BY_PLAYER, Character, Game.Player, true);
                 Function.Call(Hash.SET_PED_GET_OUT_UPSIDE_DOWN_VEHICLE, Character, false);
                 Function.Call(Hash.SET_PED_AS_ENEMY, Character, false);
                 Function.Call(Hash.SET_CAN_ATTACK_FRIENDLY, Character, true, true);
-
-                if (Alpha < 255) Character.Opacity = Alpha;
+                
+			    if (Alpha < 255) Character.Opacity = Alpha;
 
                 LogManager.DebugLog("SETTING CLOTHES FOR " + Name);
 
-                if (Props != null)
-                    foreach (var pair in Props)
-                    {
-                        Function.Call(Hash.SET_PED_COMPONENT_VARIATION, Character, pair.Key, pair.Value, Textures[pair.Key], 2);
-                    }
+				if (Props != null)
+					foreach (var pair in Props)
+					{
+						Function.Call(Hash.SET_PED_COMPONENT_VARIATION, Character, pair.Key, pair.Value, Textures[pair.Key], 2);
+					}
 
-                if (Accessories != null)
-                {
-                    foreach (var pair in Accessories)
-                    {
+			    if (Accessories != null)
+			    {
+			        foreach (var pair in Accessories)
+			        {
                         Function.Call(Hash.SET_PED_COMPONENT_VARIATION, Character, pair.Key, pair.Value.Item1, pair.Value.Item2, 2);
                     }
-                }
+			    }
 
                 Main.NetEntityHandler.ReattachAllEntities(this, false);
 
-                foreach (var source in Main.NetEntityHandler.ClientMap.Values.Where(item => item is RemoteParticle && ((RemoteParticle)item).EntityAttached == RemoteHandle).Cast<RemoteParticle>())
-                {
-                    Main.NetEntityHandler.StreamOut(source);
+			    foreach (var source in Main.NetEntityHandler.ClientMap.Values.Where(item => item is RemoteParticle && ((RemoteParticle) item).EntityAttached == RemoteHandle).Cast<RemoteParticle>())
+			    {
+			        Main.NetEntityHandler.StreamOut(source);
                     Main.NetEntityHandler.StreamIn(source);
-                }
+			    }
 
                 if (PacketOptimization.CheckBit(Flag, EntityFlag.Collisionless))
                 {
@@ -539,17 +531,17 @@ namespace CherryMP.Networking
 				}
                 */
 
-                return true;
-            }
-            return false;
-        }
+				return true;
+			}
+		    return false;
+	    }
 
         void DrawNametag()
         {
             if (!Main.UIVisible) return;
 
             if ((NametagSettings & 1) != 0) return;
-
+           
             if (((Character.IsInRangeOfEx(Game.Player.Character.Position, 25f))) || Function.Call<bool>(Hash.IS_PLAYER_FREE_AIMING_AT_ENTITY, Game.Player, Character)) //Natives can slow down
             {
                 if (Function.Call<bool>(Hash.HAS_ENTITY_CLEAR_LOS_TO_ENTITY, Game.Player.Character, Character, 17)) //Natives can slow down
@@ -562,7 +554,7 @@ namespace CherryMP.Networking
 
                     Function.Call(Hash.SET_DRAW_ORIGIN, targetPos.X, targetPos.Y, targetPos.Z, 0);
                     DEBUG_STEP = 6;
-                    var nameText = Name == null ? "<nameless>" : Name;
+                    var nameText = Name ?? "<nameless>";
 
                     if (!string.IsNullOrEmpty(NametagText))
                         nameText = NametagText;
@@ -577,9 +569,7 @@ namespace CherryMP.Networking
 
                     if ((NametagSettings & 2) != 0)
                     {
-                        byte r, g, b, a;
-
-                        Util.Util.ToArgb(NametagSettings >> 8, out a, out r, out g, out b);
+                        Util.Util.ToArgb(NametagSettings >> 8, out byte a, out byte r, out byte g, out byte b);
 
                         defaultColor = Color.FromArgb(r, g, b);
                     }
@@ -595,7 +585,7 @@ namespace CherryMP.Networking
                         var armorBar = Math.Round(150 * armorPercent);
                         armorBar = (armorBar * sizeOffset);
 
-                        //Less latency with rectangles disabled
+                    //Less latency with rectangles disabled
                         Util.Util.DrawRectangle(-75 * sizeOffset, 36 * sizeOffset, armorBar, 20 * sizeOffset, armorColor.R, armorColor.G,
                             armorColor.B, armorColor.A);
                         Util.Util.DrawRectangle(-75 * sizeOffset + armorBar, 36 * sizeOffset, (sizeOffset * 150) - armorBar, sizeOffset * 20,
@@ -610,68 +600,68 @@ namespace CherryMP.Networking
         }
 
         internal int _debugVehicleHash;
-        bool CreateVehicle()
-        {
-            if (_isInVehicle && MainVehicle != null && Character.IsInVehicle(MainVehicle) && Game.Player.Character.IsInVehicle(MainVehicle) && VehicleSeat == -1 &&
+	    bool CreateVehicle()
+	    {
+	        if (_isInVehicle && MainVehicle != null && Character.IsInVehicle(MainVehicle) && Game.Player.Character.IsInVehicle(MainVehicle) && VehicleSeat == -1 && 
                 Function.Call<int>(Hash.GET_SEAT_PED_IS_TRYING_TO_ENTER, Game.Player.Character) == -1 &&
-                Util.Util.GetPedSeat(Game.Player.Character) == 0)
-            {
-                Character.Task.WarpOutOfVehicle(MainVehicle);
+	            Util.Util.GetPedSeat(Game.Player.Character) == 0)
+	        {
+	            Character.Task.WarpOutOfVehicle(MainVehicle);
                 Game.Player.Character.Task.WarpIntoVehicle(MainVehicle, GTA.VehicleSeat.Driver);
-                Main.LastCarEnter = DateTime.Now;
+	            Main.LastCarEnter = DateTime.Now;
                 Script.Yield();
-                return true;
-            }
+	            return true;
+	        }
 
-            var createVehicle = (!_lastVehicle && _isInVehicle) ||
-                                (_lastVehicle && _isInVehicle &&
-                                 (MainVehicle == null ||
-                                  (!Character.IsInVehicle(MainVehicle) &&
-                                   Game.Player.Character.VehicleTryingToEnter != MainVehicle) ||
-                                  (VehicleSeat != Util.Util.GetPedSeat(Character) &&
-                                   Game.Player.Character.VehicleTryingToEnter != MainVehicle)));
+	        var createVehicle = (!_lastVehicle && _isInVehicle) ||
+	                            (_lastVehicle && _isInVehicle &&
+	                             (MainVehicle == null ||
+	                              (!Character.IsInVehicle(MainVehicle) &&
+	                               Game.Player.Character.VehicleTryingToEnter != MainVehicle) ||
+	                              (VehicleSeat != Util.Util.GetPedSeat(Character) &&
+	                               Game.Player.Character.VehicleTryingToEnter != MainVehicle)));
 
-            if (!Debug && MainVehicle != null)
-            {
-                createVehicle = createVehicle || Main.NetEntityHandler.EntityToNet(MainVehicle.Handle) != VehicleNetHandle;
-            }
+	        if (!Debug && MainVehicle != null)
+	        {
+	            createVehicle = createVehicle || Main.NetEntityHandler.EntityToNet(MainVehicle.Handle) != VehicleNetHandle;
+	        }
 
             if (createVehicle)
-            {
-                if (Debug)
-                {
-                    if (MainVehicle != null) MainVehicle.Delete();
-                    MainVehicle = World.CreateVehicle(new Model(_debugVehicleHash), Position, VehicleRotation.Z);
-                    //MainVehicle.HasCollision = false;
-                }
-                else
-                {
-                    MainVehicle = new Vehicle(Main.NetEntityHandler.NetToEntity(VehicleNetHandle)?.Handle ?? 0);
-                }
-                DEBUG_STEP = 10;
+			{
+			    if (Debug)
+			    {
+			        if (MainVehicle != null) MainVehicle.Delete();
+			        MainVehicle = World.CreateVehicle(new Model(_debugVehicleHash), Position, VehicleRotation.Z);
+			        //MainVehicle.HasCollision = false;
+			    }
+			    else
+			    {
+			        MainVehicle = new Vehicle(Main.NetEntityHandler.NetToEntity(VehicleNetHandle)?.Handle ?? 0);
+			    }
+				DEBUG_STEP = 10;
 
-                if (MainVehicle == null || MainVehicle.Handle == 0)
-                {
-                    Character.Position = Position;
-                    return true;
-                }
-
+			    if (MainVehicle == null || MainVehicle.Handle == 0)
+			    {
+			        Character.Position = Position;
+			        return true;
+			    }
+                
 
                 if (Game.Player.Character.IsInVehicle(MainVehicle) &&
-                    VehicleSeat == Util.Util.GetPedSeat(Game.Player.Character))
-                {
-                    if (DateTime.Now.Subtract(Main.LastCarEnter).TotalMilliseconds < 1000)
-                    {
-                        return true;
-                    }
+					VehicleSeat == Util.Util.GetPedSeat(Game.Player.Character))
+				{
+				    if (DateTime.Now.Subtract(Main.LastCarEnter).TotalMilliseconds < 1000)
+				    {
+				        return true;
+				    }
 
-                    Game.Player.Character.Task.WarpOutOfVehicle(MainVehicle);
-                    Util.Util.SafeNotify("~r~Car jacked!");
-                }
-                DEBUG_STEP = 11;
+					Game.Player.Character.Task.WarpOutOfVehicle(MainVehicle);
+					Util.Util.SafeNotify("~r~Car jacked!");
+				}
+				DEBUG_STEP = 11;
 
-                if (MainVehicle != null && MainVehicle.Handle != 0)
-                {
+				if (MainVehicle != null && MainVehicle.Handle != 0)
+				{
                     /*
 				    if (VehicleSeat == -1)
 				    {
@@ -687,76 +677,76 @@ namespace CherryMP.Networking
                     MainVehicle.IsInvincible = true;
                     Character.SetIntoVehicle(MainVehicle, (VehicleSeat)VehicleSeat);
                     DEBUG_STEP = 12;
-                }
-                DEBUG_STEP = 13;
-                _lastVehicle = true;
-                _justEnteredVeh = true;
-                _enterVehicleStarted = DateTime.Now;
-                return true;
-            }
-            return false;
-        }
+				}
+				DEBUG_STEP = 13;
+				_lastVehicle = true;
+				_justEnteredVeh = true;
+				_enterVehicleStarted = DateTime.Now;
+				return true;
+			}
+		    return false;
+	    }
 
-        bool UpdatePlayerPosOutOfRange(Vector3 gPos, bool inRange)
-        {
-            if (!inRange)
-            {
-                var delta = Util.Util.TickCount - LastUpdateReceived;
+	    bool UpdatePlayerPosOutOfRange(Vector3 gPos, bool inRange)
+	    {
+			if (!inRange)
+			{
+			    var delta = Util.Util.TickCount - LastUpdateReceived;
                 if (delta < 10000)
-                {
-                    Vector3 lastPos = _lastPosition == null ? Position : _lastPosition.Value;
+				{
+				    Vector3 lastPos = _lastPosition == null ? Position : _lastPosition.Value;
 
-                    if (!_isInVehicle)
-                    {
-                        Character.PositionNoOffset = Vector3.Lerp(lastPos, gPos, Math.Min(1f, delta / 1000f));
-                    }
-                    else if (MainVehicle != null && GetResponsiblePed(MainVehicle).Handle == Character.Handle)
-                    {
-                        MainVehicle.PositionNoOffset = Vector3.Lerp(lastPos, gPos, Math.Min(1f, delta / 1000f));
-#if !DISABLE_ROTATION_SIM
+				    if (!_isInVehicle)
+				    {
+				        Character.PositionNoOffset = Vector3.Lerp(lastPos, gPos, Math.Min(1f, delta / 1000f));
+				    }
+					else if (MainVehicle != null && GetResponsiblePed(MainVehicle).Handle == Character.Handle)
+					{
+					    MainVehicle.PositionNoOffset = Vector3.Lerp(lastPos, gPos, Math.Min(1f, delta / 1000f));
+                        #if !DISABLE_ROTATION_SIM
                         if (_lastVehiclePos != null)
                             MainVehicle.Quaternion = Main.DirectionToRotation(_lastVehiclePos.Value - gPos).ToQuaternion();
-#endif
-                    }
+                        #endif
+					}
                 }
-                return true;
-            }
-            return false;
-        }
+				return true;
+			}
+		    return false;
+	    }
 
-        void WorkaroundBlip()
-        {
-            if (_isInVehicle && MainVehicle != null && _blip && (Character.GetOffsetInWorldCoords(new Vector3()) - MainVehicle.Position).Length() > 70f)
-            {
-                LogManager.DebugLog("Blip was too far away -- deleting");
-                Character.Delete();
-            }
-        }
+	    void WorkaroundBlip()
+	    {
+            if (_isInVehicle && MainVehicle != null && _blip  && (Character.GetOffsetInWorldCoords(new Vector3()) - MainVehicle.Position).Length() > 70f)
+			{
+				LogManager.DebugLog("Blip was too far away -- deleting");
+				Character.Delete();
+			}
+		}
 
-        bool UpdatePosition()
-        {
+	    bool UpdatePosition()
+	    {
             return _isInVehicle ? UpdateVehiclePosition() : UpdateOnFootPosition();
-        }
+	    }
 
-        void UpdateVehicleInternalInfo()
-        {
-            if (MainVehicle.MemoryAddress == IntPtr.Zero) return;
+	    void UpdateVehicleInternalInfo()
+	    {
+	        if (MainVehicle.MemoryAddress == IntPtr.Zero) return;
 
             MainVehicle.EngineHealth = VehicleHealth;
-            if (IsVehDead && !MainVehicle.IsDead)
-            {
-                MainVehicle.IsInvincible = false;
-                MainVehicle.Explode();
-            }
-            else if (!IsVehDead && MainVehicle.IsDead)
-            {
-                MainVehicle.IsInvincible = true;
-                if (MainVehicle.IsDead)
-                    MainVehicle.Repair();
-            }
-            DEBUG_STEP = 17;
-            //MainVehicle.PrimaryColor = (VehicleColor) VehiclePrimaryColor;
-            //MainVehicle.SecondaryColor = (VehicleColor) VehicleSecondaryColor;
+			if (IsVehDead && !MainVehicle.IsDead)
+			{
+				MainVehicle.IsInvincible = false;
+				MainVehicle.Explode();
+			}
+			else if (!IsVehDead && MainVehicle.IsDead)
+			{
+				MainVehicle.IsInvincible = true;
+				if (MainVehicle.IsDead)
+					MainVehicle.Repair();
+			}
+			DEBUG_STEP = 17;
+			//MainVehicle.PrimaryColor = (VehicleColor) VehiclePrimaryColor;
+			//MainVehicle.SecondaryColor = (VehicleColor) VehicleSecondaryColor;
             /*
 			if (VehicleMods != null && _modSwitch % 50 == 0 &&
 				Game.Player.Character.IsInRangeOfEx(Position, 30f))
@@ -775,46 +765,46 @@ namespace CherryMP.Networking
 			if (_modSwitch >= 2500)
 				_modSwitch = 0;
                 */
-            Function.Call(Hash.USE_SIREN_AS_HORN, MainVehicle, Siren); // No difference?
+	        Function.Call(Hash.USE_SIREN_AS_HORN, MainVehicle, Siren); // No difference?
 
-            if (IsHornPressed && !_lastHorn)
-            {
-                _lastHorn = true;
-                MainVehicle.SoundHorn(99999);
-            }
+			if (IsHornPressed && !_lastHorn)
+			{
+				_lastHorn = true;
+				MainVehicle.SoundHorn(99999);
+			}
 
-            if (!IsHornPressed && _lastHorn)
-            {
-                _lastHorn = false;
-                MainVehicle.SoundHorn(1);
-            }
+			if (!IsHornPressed && _lastHorn)
+			{
+				_lastHorn = false;
+				MainVehicle.SoundHorn(1);
+			}
 
-            if (IsInBurnout && !_lastBurnout)
-            {
-                Function.Call(Hash.SET_VEHICLE_BURNOUT, MainVehicle, true);
+	        if (IsInBurnout && !_lastBurnout)
+	        {
+	            Function.Call(Hash.SET_VEHICLE_BURNOUT, MainVehicle, true);
                 Function.Call(Hash.TASK_VEHICLE_TEMP_ACTION, Character, MainVehicle, 23, 120000); // 30 - burnout
             }
 
-            if (!IsInBurnout && _lastBurnout)
-            {
+	        if (!IsInBurnout && _lastBurnout)
+	        {
                 Function.Call(Hash.SET_VEHICLE_BURNOUT, MainVehicle, false);
                 Character.Task.ClearAll();
             }
 
-            _lastBurnout = IsInBurnout;
+	        _lastBurnout = IsInBurnout;
 
             Function.Call(Hash.SET_VEHICLE_BRAKE_LIGHTS, MainVehicle, Speed > 0.2 && _lastSpeed > Speed);
 
             DEBUG_STEP = 18;
 
-            if (MainVehicle.SirenActive && !Siren)
-                MainVehicle.SirenActive = Siren;
-            else if (!MainVehicle.SirenActive && Siren)
-                MainVehicle.SirenActive = Siren;
+			if (MainVehicle.SirenActive && !Siren)
+				MainVehicle.SirenActive = Siren;
+			else if (!MainVehicle.SirenActive && Siren)
+				MainVehicle.SirenActive = Siren;
 
-            MainVehicle.CurrentRPM = VehicleRPM;
-            MainVehicle.SteeringAngle = Util.Util.ToRadians(SteeringScale);
-        }
+			MainVehicle.CurrentRPM = VehicleRPM;
+		    MainVehicle.SteeringAngle = Util.Util.ToRadians(SteeringScale);
+	    }
 
         struct interpolation
         {
@@ -835,46 +825,46 @@ namespace CherryMP.Networking
             if (_isInVehicle)
             {
                 if (_lastPosition == null) return;
-                if (Main.VehicleLagCompensation)
-                {
+                //if (Main.VehicleLagCompensation)
+                //{
 
-                    var dir = Position - _lastPosition.Value;
-                    currentInterop.vecTarget = Position + dir;
-                    currentInterop.vecError = dir;
-                    //MainVehicle == null ? dir : MainVehicle.Position - currentInterop.vecTarget;
-                    //currentInterop.vecError *= Util.Lerp(0.25f, Util.Unlerp(100, 100, 400), 1f);
-                }
-                else
-                {
-                    var dir = Position - _lastPosition.Value;
-                    currentInterop.vecTarget = Position;
-                    currentInterop.vecError = dir;
-                    currentInterop.vecError *= Util.Util.Lerp(0.25f, Util.Util.Unlerp(100, 100, 400), 1f);
-                }
+                var dir = Position - _lastPosition.Value;
+                currentInterop.vecTarget = Position + dir;
+                currentInterop.vecError = dir;
+                //MainVehicle == null ? dir : MainVehicle.Position - currentInterop.vecTarget;
+                //currentInterop.vecError *= Util.Lerp(0.25f, Util.Unlerp(100, 100, 400), 1f);
+                //}
+                //else
+                //{
+                //    var dir = Position - _lastPosition.Value;
+                //    currentInterop.vecTarget = Position;
+                //    currentInterop.vecError = dir;
+                //    currentInterop.vecError *= Util.Util.Lerp(0.25f, Util.Util.Unlerp(100, 100, 400), 1f);
+                //}
 
                 if (MainVehicle != null)
                     currentInterop.vecStart = MainVehicle.Position;
             }
             else
             {
-                if (Main.OnFootLagCompensation)
-                {
-                    var dir = Position - _lastPosition;
-                    currentInterop.vecTarget = Position; // + dir;
-                    currentInterop.vecError = dir ?? new Vector3();
-                    currentInterop.vecStart = Position;
+                //if (Main.OnFootLagCompensation)
+                //{
+                var dir = Position - _lastPosition;
+                currentInterop.vecTarget = Position; // + dir;
+                currentInterop.vecError = dir ?? new Vector3();
+                currentInterop.vecStart = Position;
 
-                    //MainVehicle == null ? dir : MainVehicle.Position - currentInterop.vecTarget;
-                    //currentInterop.vecError *= Util.Lerp(0.25f, Util.Unlerp(100, 100, 400), 1f);
-                }
-                else
-                {
-                    var dir = Position - _lastPosition;
+                //MainVehicle == null ? dir : MainVehicle.Position - currentInterop.vecTarget;
+                //currentInterop.vecError *= Util.Lerp(0.25f, Util.Unlerp(100, 100, 400), 1f);
+                //}
+                //else
+                //{
+                //    var dir = Position - _lastPosition;
 
-                    currentInterop.vecTarget = Position;
-                    currentInterop.vecError = dir ?? new Vector3();
-                    currentInterop.vecError *= Util.Util.Lerp(0.25f, Util.Util.Unlerp(100, 100, 400), 1f);
-                }
+                //    currentInterop.vecTarget = Position;
+                //    currentInterop.vecError = dir ?? new Vector3();
+                //    currentInterop.vecError *= Util.Util.Lerp(0.25f, Util.Util.Unlerp(100, 100, 400), 1f);
+                //}
 
                 if (Character != null)
                     currentInterop.vecStart = Character.Position;
@@ -896,7 +886,7 @@ namespace CherryMP.Networking
                 float force = 1.20f + (float)Math.Sqrt(_latencyAverager.Average() / 2500) + (Speed / 250); // Calcul pour connaitre la force à appliquer à partir du ping & de la vitesse
                 float forceVelo = 1.05f + (float)Math.Sqrt(_latencyAverager.Average() / 5000) + (Speed / 750); // calcul de la force à appliquer au vecteur
 
-                if (MainVehicle.Velocity.Length() > VehicleVelocity.Length())
+                if (MainVehicle.Velocity.Length() > VehicleVelocity.Length()) 
                 {
                     MainVehicle.Velocity = VehicleVelocity * forceVelo + (vecDif * (force + 0.15f)); // Calcul
                 }
@@ -1075,181 +1065,181 @@ namespace CherryMP.Networking
             return (Team != -1 && Team == Main.LocalTeam);
         }
 
-        bool DisplayVehicleDriveBy()
-        {
+	    bool DisplayVehicleDriveBy()
+	    {
             if (IsShooting && CurrentWeapon != 0 && VehicleSeat == -1 && WeaponDataProvider.DoesVehicleSeatHaveMountedGuns((VehicleHash)VehicleHash))
-            {
-                var isRocket = WeaponDataProvider.IsVehicleWeaponRocket(CurrentWeapon);
-                if (isRocket && DateTime.Now.Subtract(_lastRocketshot).TotalMilliseconds < 1500)
-                {
-                    return true;
-                }
-                if (isRocket)
-                    _lastRocketshot = DateTime.Now;
-                var isParallel =
-                    WeaponDataProvider.DoesVehicleHaveParallelWeapon(unchecked((VehicleHash)VehicleHash),
-                        isRocket);
+			{
+				var isRocket = WeaponDataProvider.IsVehicleWeaponRocket(CurrentWeapon);
+				if (isRocket && DateTime.Now.Subtract(_lastRocketshot).TotalMilliseconds < 1500)
+				{
+					return true;
+				}
+				if (isRocket)
+					_lastRocketshot = DateTime.Now;
+				var isParallel =
+					WeaponDataProvider.DoesVehicleHaveParallelWeapon(unchecked((VehicleHash)VehicleHash),
+						isRocket);
 
-                var muzzle = WeaponDataProvider.GetVehicleWeaponMuzzle(unchecked((VehicleHash)VehicleHash), isRocket);
+				var muzzle = WeaponDataProvider.GetVehicleWeaponMuzzle(unchecked((VehicleHash)VehicleHash), isRocket);
 
-                if (isParallel && _leftSide)
-                {
-                    muzzle = new Vector3(muzzle.X * -1f, muzzle.Y, muzzle.Z);
-                }
-                _leftSide = !_leftSide;
+				if (isParallel && _leftSide)
+				{
+					muzzle = new Vector3(muzzle.X * -1f, muzzle.Y, muzzle.Z);
+				}
+				_leftSide = !_leftSide;
 
-                var start =
-                    MainVehicle.GetOffsetInWorldCoords(muzzle);
-                var end = start + Main.RotationToDirection(VehicleRotation) * 100f;
-                var hash = CurrentWeapon;
-                var speed = 0xbf800000;
-
-                if (isRocket)
-                    speed = 0xbf800000;
-                else if ((VehicleHash)VehicleHash == GTA.VehicleHash.Savage ||
-                         (VehicleHash)VehicleHash == GTA.VehicleHash.Hydra ||
-                         (VehicleHash)VehicleHash == GTA.VehicleHash.Lazer)
-                    hash = unchecked((int)WeaponHash.Railgun);
+				var start =
+					MainVehicle.GetOffsetInWorldCoords(muzzle);
+				var end = start + Main.RotationToDirection(VehicleRotation) * 100f;
+				var hash = CurrentWeapon;
+				var speed = 0xbf800000;
+                
+				if (isRocket)
+					speed = 0xbf800000;
+				else if ((VehicleHash) VehicleHash == GTA.VehicleHash.Savage ||
+				         (VehicleHash) VehicleHash == GTA.VehicleHash.Hydra ||
+				         (VehicleHash) VehicleHash == GTA.VehicleHash.Lazer)
+				    hash = unchecked((int) WeaponHash.Railgun);
                 else
-                    hash = unchecked((int)WeaponHash.CombatPDW);
+					hash = unchecked((int)WeaponHash.CombatPDW);
 
-                int damage = IsFriend() ? 0 : 75;
+			    int damage = IsFriend() ? 0 : 75;
 
-                Function.Call(Hash.SHOOT_SINGLE_BULLET_BETWEEN_COORDS, start.X, start.Y, start.Z, end.X,
-                        end.Y, end.Z, damage, true, hash, Character, true, false, speed);
-            }
+				Function.Call(Hash.SHOOT_SINGLE_BULLET_BETWEEN_COORDS, start.X, start.Y, start.Z, end.X,
+						end.Y, end.Z, damage, true, hash, Character, true, false, speed);
+			}
 
-            return false;
-        }
+		    return false;
+	    }
 
-        bool UpdateVehicleMainData()
-        {
-            UpdateVehicleInternalInfo();
-            DEBUG_STEP = 19;
+		bool UpdateVehicleMainData()
+		{
+            UpdateVehicleInternalInfo();	
+			DEBUG_STEP = 19;
 
-            DisplayVehiclePosition();
+			DisplayVehiclePosition();
 
-            return false;
-        }
+		    return false;
+		}
 
-        void UpdateVehicleMountedWeapon()
-        {
+	    void UpdateVehicleMountedWeapon()
+	    {
             if (WeaponDataProvider.DoesVehicleSeatHaveGunPosition((VehicleHash)VehicleHash, VehicleSeat))
             {
                 var delay = 30;
                 //if ((VehicleHash) VehicleHash == GTA.Native.VehicleHash.Rhino) delay = 300;
 
-                if (Game.GameTime - _lastVehicleAimUpdate > delay)
-                {
-                    Function.Call(Hash.TASK_VEHICLE_AIM_AT_COORD, Character, AimCoords.X, AimCoords.Y,
-                        AimCoords.Z);
-                    _lastVehicleAimUpdate = Game.GameTime;
-                }
+				if (Game.GameTime - _lastVehicleAimUpdate > delay)
+				{
+					Function.Call(Hash.TASK_VEHICLE_AIM_AT_COORD, Character, AimCoords.X, AimCoords.Y,
+						AimCoords.Z);
+					_lastVehicleAimUpdate = Game.GameTime;
+				}
 
                 if (IsShooting)
                 {
-                    if (((VehicleHash)VehicleHash == GTA.VehicleHash.Rhino &&
-                         DateTime.Now.Subtract(_lastRocketshot).TotalMilliseconds > 1000) ||
-                        ((VehicleHash)VehicleHash != GTA.VehicleHash.Rhino))
-                    {
-                        _lastRocketshot = DateTime.Now;
+					if (((VehicleHash)VehicleHash == GTA.VehicleHash.Rhino &&
+						 DateTime.Now.Subtract(_lastRocketshot).TotalMilliseconds > 1000) ||
+						((VehicleHash)VehicleHash != GTA.VehicleHash.Rhino))
+					{
+						_lastRocketshot = DateTime.Now;
 
-                        var baseTurretPos =
-                            MainVehicle.GetOffsetInWorldCoords(
-                                WeaponDataProvider.GetVehicleWeaponMuzzle((VehicleHash)VehicleHash, false));
-                        var doesBaseTurretDiffer =
-                            WeaponDataProvider.DoesVehiclesMuzzleDifferFromVehicleGunPos(
-                                (VehicleHash)VehicleHash);
-                        var barrellLength = WeaponDataProvider.GetVehicleTurretLength((VehicleHash)VehicleHash);
+						var baseTurretPos =
+							MainVehicle.GetOffsetInWorldCoords(
+								WeaponDataProvider.GetVehicleWeaponMuzzle((VehicleHash)VehicleHash, false));
+						var doesBaseTurretDiffer =
+							WeaponDataProvider.DoesVehiclesMuzzleDifferFromVehicleGunPos(
+								(VehicleHash)VehicleHash);
+						var barrellLength = WeaponDataProvider.GetVehicleTurretLength((VehicleHash)VehicleHash);
 
-                        var speed = 0xbf800000;
-                        var hash = WeaponHash.CombatPDW;
-                        if ((VehicleHash)VehicleHash == GTA.VehicleHash.Rhino)
-                        {
-                            hash = (WeaponHash)1945616459;
-                        }
+						var speed = 0xbf800000;
+						var hash = WeaponHash.CombatPDW;
+						if ((VehicleHash)VehicleHash == GTA.VehicleHash.Rhino)
+						{
+						    hash = (WeaponHash) 1945616459;
+						}
 
-                        Vector3 tPos = baseTurretPos;
-                        if (
-                            WeaponDataProvider.DoesVehicleHaveParallelWeapon((VehicleHash)VehicleHash, false) &&
-                            VehicleSeat == 1)
-                        {
-                            var muzzle = WeaponDataProvider.GetVehicleWeaponMuzzle((VehicleHash)VehicleHash,
-                                false);
-                            tPos =
-                                MainVehicle.GetOffsetInWorldCoords(new Vector3(muzzle.X * -1f, muzzle.Y, muzzle.Z));
-                        }
+						Vector3 tPos = baseTurretPos;
+						if (
+							WeaponDataProvider.DoesVehicleHaveParallelWeapon((VehicleHash)VehicleHash, false) &&
+							VehicleSeat == 1)
+						{
+							var muzzle = WeaponDataProvider.GetVehicleWeaponMuzzle((VehicleHash)VehicleHash,
+								false);
+							tPos =
+								MainVehicle.GetOffsetInWorldCoords(new Vector3(muzzle.X * -1f, muzzle.Y, muzzle.Z));
+						}
 
-                        if (doesBaseTurretDiffer)
-                        {
-                            var kekDir = (AimCoords - tPos);
-                            kekDir.Normalize();
-                            var rot = Main.DirectionToRotation(kekDir);
-                            var newDir = Main.RotationToDirection(new Vector3(0, 0, rot.Z));
-                            newDir.Normalize();
-                            tPos = tPos +
-                                   newDir *
-                                   WeaponDataProvider.GetVehicleWeaponMuzzle((VehicleHash)VehicleHash, true)
-                                       .Length();
-                        }
+						if (doesBaseTurretDiffer)
+						{
+							var kekDir = (AimCoords - tPos);
+							kekDir.Normalize();
+							var rot = Main.DirectionToRotation(kekDir);
+							var newDir = Main.RotationToDirection(new Vector3(0, 0, rot.Z));
+							newDir.Normalize();
+							tPos = tPos +
+								   newDir *
+								   WeaponDataProvider.GetVehicleWeaponMuzzle((VehicleHash)VehicleHash, true)
+									   .Length();
+						}
 
 
-                        var turretDir = (AimCoords - tPos);
-                        turretDir.Normalize();
-                        var start = tPos + turretDir * barrellLength;
-                        var end = start + turretDir * 100f;
+						var turretDir = (AimCoords - tPos);
+						turretDir.Normalize();
+						var start = tPos + turretDir * barrellLength;
+						var end = start + turretDir * 100f;
 
-                        _lastStart = start;
-                        _lastEnd = end;
+						_lastStart = start;
+						_lastEnd = end;
 
-                        var damage = WeaponDataProvider.GetWeaponDamage(WeaponHash.Minigun);
-                        if ((VehicleHash)VehicleHash == GTA.VehicleHash.Rhino)
-                            damage = 210;
+						var damage = WeaponDataProvider.GetWeaponDamage(WeaponHash.Minigun);
+						if ((VehicleHash)VehicleHash == GTA.VehicleHash.Rhino)
+							damage = 210;
 
-                        if (IsFriend())
-                            damage = 0;
+					    if (IsFriend())
+					        damage = 0;
 
-                        Function.Call(Hash.SHOOT_SINGLE_BULLET_BETWEEN_COORDS, start.X, start.Y, start.Z, end.X,
-                            end.Y, end.Z, damage, true, (int)hash, Character, true, false, speed);
-                    }
-                }
-            }
-            else if (!WeaponDataProvider.DoesVehicleSeatHaveMountedGuns((VehicleHash)VehicleHash) || VehicleSeat != -1)
-            {
-                if (Character.Weapons.Current.Hash != (WeaponHash)CurrentWeapon)
-                {
-                    //Function.Call(Hash.GIVE_WEAPON_TO_PED, Character, CurrentWeapon, 999, true, true);
-                    //Function.Call(Hash.SET_CURRENT_PED_WEAPON, Character, CurrentWeapon, true);
-                    //Character.Weapons.Give((WeaponHash)CurrentWeapon, -1, true, true);
-                    //Character.Weapons.Select((WeaponHash) CurrentWeapon);
+						Function.Call(Hash.SHOOT_SINGLE_BULLET_BETWEEN_COORDS, start.X, start.Y, start.Z, end.X,
+							end.Y, end.Z, damage, true, (int)hash, Character, true, false, speed);
+					}
+				}
+			}
+			else if (!WeaponDataProvider.DoesVehicleSeatHaveMountedGuns((VehicleHash)VehicleHash) || VehicleSeat != -1)
+			{
+				if (Character.Weapons.Current.Hash != (WeaponHash)CurrentWeapon)
+				{
+					//Function.Call(Hash.GIVE_WEAPON_TO_PED, Character, CurrentWeapon, 999, true, true);
+					//Function.Call(Hash.SET_CURRENT_PED_WEAPON, Character, CurrentWeapon, true);
+					//Character.Weapons.Give((WeaponHash)CurrentWeapon, -1, true, true);
+				    //Character.Weapons.Select((WeaponHash) CurrentWeapon);
                     Character.Weapons.RemoveAll();
                     Character.Weapons.Give((WeaponHash)CurrentWeapon, -1, true, true);
                 }
 
-                if (IsShooting || IsAiming)
-                {
-                    if (!_lastDrivebyShooting)
-                    {
+				if (IsShooting || IsAiming)
+				{
+					if (!_lastDrivebyShooting)
+				    {
                         Function.Call(Hash.SET_PED_CURRENT_WEAPON_VISIBLE, Character, false, false, false, false);
 
                         Function.Call(Hash.TASK_DRIVE_BY, Character, 0, 0, AimCoords.X, AimCoords.Y, AimCoords.Z,
-                            0, 0, 0, unchecked((int)FiringPattern.SingleShot));
-                    }
-                    else
-                    {
+				            0, 0, 0, unchecked((int) FiringPattern.SingleShot));
+				    }
+				    else
+				    {
                         Function.Call(Hash.SET_PED_CURRENT_WEAPON_VISIBLE, Character, true, false, false, false);
 
                         Function.Call(Hash.SET_DRIVEBY_TASK_TARGET, Character, 0, 0, AimCoords.X, AimCoords.Y, AimCoords.Z);
-                    }
+				    }
 
-                    var rightSide = (VehicleSeat + 2) % 2 == 0;
+				    var rightSide = (VehicleSeat + 2)%2 == 0;
 
-                    if (WeaponDataProvider.NeedsFakeBullets(CurrentWeapon))
-                    {
+				    if (WeaponDataProvider.NeedsFakeBullets(CurrentWeapon))
+				    {
                         const string rightDict = "veh@driveby@first_person@passenger_right_handed@throw";
-                        const string leftDict = "veh@driveby@first_person@driver@throw";
+				        const string leftDict = "veh@driveby@first_person@driver@throw";
 
-                        string drivebyDict = rightSide ? rightDict : leftDict;
+				        string drivebyDict = rightSide ? rightDict : leftDict;
 
                         Function.Call(Hash.TASK_PLAY_ANIM_ADVANCED, Character, Util.Util.LoadDict(drivebyDict),
                             "sweep_low", Character.Position.X, Character.Position.Y, Character.Position.Z, Character.Rotation.X,
@@ -1294,7 +1284,7 @@ namespace CherryMP.Networking
                     }
 
                     _lastVehicleAimUpdate = Game.GameTime;
-                    _lastDrivebyShooting = IsShooting || IsAiming;
+					_lastDrivebyShooting = IsShooting || IsAiming;
 
                     if (Function.Call<bool>(Hash.HAS_ENTITY_BEEN_DAMAGED_BY_ENTITY, Game.Player.Character, Character, true))
                     {
@@ -1316,23 +1306,23 @@ namespace CherryMP.Networking
                     Function.Call(Hash.CLEAR_ENTITY_LAST_DAMAGE_ENTITY, Game.Player.Character);
                 }
 
-                if (!IsShooting && !IsAiming && _lastDrivebyShooting && Game.GameTime - _lastVehicleAimUpdate > 200)
-                {
-                    Character.Task.ClearAll();
-                    Character.Task.ClearSecondary();
-                    Function.Call(Hash.CLEAR_DRIVEBY_TASK_UNDERNEATH_DRIVING_TASK, Character);
-                    //Function.Call(Hash.TASK_DRIVE_BY, Character, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-                    //Function.Call(Hash.SET_DRIVEBY_TASK_TARGET, Character, 0, 0, 0, 0, 0);
-                    Character.Task.ClearLookAt();
-                    //GTA.UI.Screen.ShowNotification("Done shooting");
-                    //GTA.UI.Screen.ShowSubtitle("Done Shooting1", 300);
-                    _lastDrivebyShooting = false;
-                }
-            }
-        }
+				if (!IsShooting && !IsAiming && _lastDrivebyShooting && Game.GameTime - _lastVehicleAimUpdate > 200)
+				{
+					Character.Task.ClearAll();
+					Character.Task.ClearSecondary();
+					Function.Call(Hash.CLEAR_DRIVEBY_TASK_UNDERNEATH_DRIVING_TASK, Character);
+					//Function.Call(Hash.TASK_DRIVE_BY, Character, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+					//Function.Call(Hash.SET_DRIVEBY_TASK_TARGET, Character, 0, 0, 0, 0, 0);
+					Character.Task.ClearLookAt();
+					//GTA.UI.Screen.ShowNotification("Done shooting");
+					//GTA.UI.Screen.ShowSubtitle("Done Shooting1", 300);
+					_lastDrivebyShooting = false;
+				}
+			}
+		}
 
-        bool UpdateVehiclePosition()
-        {
+	    bool UpdateVehiclePosition()
+	    {
             DEBUG_STEP = 121;
             if (MainVehicle != null && Character.CurrentVehicle != null)
             {
@@ -1375,10 +1365,10 @@ namespace CherryMP.Networking
                 }
             }
             return false;
-        }
+	    }
 
-        void UpdateProps()
-        {
+	    void UpdateProps()
+	    {
             /*
             if (PedProps != null && _clothSwitch % 50 == 0 && Game.Player.Character.IsInRangeOfEx(IsInVehicle ? VehiclePosition : _position, 30f))
 			{
@@ -1394,12 +1384,12 @@ namespace CherryMP.Networking
 			if (_clothSwitch >= 750)
 				_clothSwitch = 0;
             */
-        }
+		}
 
-        void UpdateCurrentWeapon()
-        {
+	    void UpdateCurrentWeapon()
+	    {
             if (Character.Weapons.Current.Hash != (WeaponHash)CurrentWeapon || DirtyWeapons)
-            {
+			{
                 //Function.Call(Hash.GIVE_WEAPON_TO_PED, Character, CurrentWeapon, -1, true, true);
                 //Function.Call(Hash.SET_CURRENT_PED_WEAPON, Character, CurrentWeapon, true);
 
@@ -1407,46 +1397,46 @@ namespace CherryMP.Networking
                 //Character.Weapons.Select((WeaponHash)CurrentWeapon);
 
                 Character.Weapons.RemoveAll();
-                var p = IsInVehicle ? Position : Position;
+			    var p = IsInVehicle ? Position : Position;
 
-                Util.Util.LoadWeapon(CurrentWeapon);
+			    Util.Util.LoadWeapon(CurrentWeapon);
 
                 var wObj = Function.Call<int>(Hash.CREATE_WEAPON_OBJECT, CurrentWeapon, 999, p.X, p.Y, p.Z, true, 0, 0);
-
+                
                 if (WeaponTints != null && WeaponTints.ContainsKey(CurrentWeapon))
-                {
-                    var bitmap = WeaponTints[CurrentWeapon];
+			    {
+			        var bitmap = WeaponTints[CurrentWeapon];
 
-                    Function.Call(Hash.SET_WEAPON_OBJECT_TINT_INDEX, wObj, bitmap);
-                }
+			        Function.Call(Hash.SET_WEAPON_OBJECT_TINT_INDEX, wObj, bitmap);
+			    }
 
-                if (WeaponComponents != null && WeaponComponents.ContainsKey(CurrentWeapon) && WeaponComponents[CurrentWeapon] != null)
-                {
-                    foreach (var comp in WeaponComponents[CurrentWeapon])
-                    {
+			    if (WeaponComponents != null && WeaponComponents.ContainsKey(CurrentWeapon) && WeaponComponents[CurrentWeapon] != null)
+			    {
+			        foreach (var comp in WeaponComponents[CurrentWeapon])
+			        {
                         Function.Call(Hash.GIVE_WEAPON_COMPONENT_TO_WEAPON_OBJECT, wObj, comp);
                     }
-                }
+			    }
 
                 Function.Call(Hash.GIVE_WEAPON_OBJECT_TO_PED, wObj, Character);
 
                 DirtyWeapons = false;
-            }
+			}
 
-            if (!_lastReloading && IsReloading && ((IsInCover && !IsInLowCover) || !IsInCover))
-            {
+	        if (!_lastReloading && IsReloading && ((IsInCover && !IsInLowCover) || !IsInCover))
+	        {
                 Character.Task.ClearAll();
-                Character.Task.ReloadWeapon();
-            }
-        }
+	            Character.Task.ReloadWeapon();
+	        }
+		}
 
-        void DisplayParachuteFreefall()
-        {
-            if (!_lastFreefall)
-            {
-                Character.Task.ClearAllImmediately();
-                Character.Task.ClearSecondary();
-            }
+	    void DisplayParachuteFreefall()
+	    {
+			if (!_lastFreefall)
+			{
+				Character.Task.ClearAllImmediately();
+				Character.Task.ClearSecondary();
+			}
 
             //UpdatePlayerPedPos(fixWarp: false);
 
@@ -1465,31 +1455,31 @@ namespace CherryMP.Networking
 #endif
 
             if (
-                !Function.Call<bool>(Hash.IS_ENTITY_PLAYING_ANIM, Character,
-                    "skydive@base", "free_idle",
-                    3))
-            {
-                Function.Call(Hash.TASK_PLAY_ANIM, Character,
-                    Util.Util.LoadDict("skydive@base"), "free_idle",
-                    8f, 10f, -1, 0, -8f, 1, 1, 1);
-            }
-        }
+				!Function.Call<bool>(Hash.IS_ENTITY_PLAYING_ANIM, Character,
+					"skydive@base", "free_idle",
+					3))
+			{
+				Function.Call(Hash.TASK_PLAY_ANIM, Character,
+					Util.Util.LoadDict("skydive@base"), "free_idle",
+					8f, 10f, -1, 0, -8f, 1, 1, 1);
+			}
+		}
 
-        void DisplayOpenParachute()
-        {
+	    void DisplayOpenParachute()
+	    {
             if (_parachuteProp == null)
-            {
-                _parachuteProp = World.CreateProp(new Model(1740193300), Character.Position,
-                    Character.Rotation, false, false);
-                _parachuteProp.IsPositionFrozen = true;
-                Function.Call(Hash.SET_ENTITY_COLLISION, _parachuteProp.Handle, false, 0);
+			{
+				_parachuteProp = World.CreateProp(new Model(1740193300), Character.Position,
+					Character.Rotation, false, false);
+				_parachuteProp.IsPositionFrozen = true;
+				Function.Call(Hash.SET_ENTITY_COLLISION, _parachuteProp.Handle, false, 0);
 
                 _parachuteProp.AttachTo(Character, Character.GetBoneIndex(Bone.SKEL_Spine2), new Vector3(3.6f, 0, 0f), new Vector3(0, 90, 0));
-
-                Character.Task.ClearAllImmediately();
-                Character.Task.ClearSecondary();
-            }
-
+                
+				Character.Task.ClearAllImmediately();
+				Character.Task.ClearSecondary();
+			}
+            
 
             var target = Util.Util.LinearVectorLerp(_lastPosition ?? Position,
                 _position,
@@ -1500,19 +1490,19 @@ namespace CherryMP.Networking
 
             DEBUG_STEP = 25;
 
-            Character.Quaternion = _rotation.ToQuaternion();
+	        Character.Quaternion = _rotation.ToQuaternion();
 
             if (
-                !Function.Call<bool>(Hash.IS_ENTITY_PLAYING_ANIM, Character,
-                    "skydive@parachute@first_person", "chute_idle_right",
-                    3))
-            {
-                Function.Call(Hash.TASK_PLAY_ANIM, Character,
-                    Util.Util.LoadDict("skydive@parachute@first_person"), "chute_idle_right",
-                    8f, 10f, -1, 0, -8f, 1, 1, 1);
-            }
-            DEBUG_STEP = 26;
-        }
+				!Function.Call<bool>(Hash.IS_ENTITY_PLAYING_ANIM, Character,
+					"skydive@parachute@first_person", "chute_idle_right",
+					3))
+			{
+				Function.Call(Hash.TASK_PLAY_ANIM, Character,
+					Util.Util.LoadDict("skydive@parachute@first_person"), "chute_idle_right",
+					8f, 10f, -1, 0, -8f, 1, 1, 1);
+			}
+			DEBUG_STEP = 26;
+		}
 
         void DisplayCustomAnimation()
         {
@@ -1566,111 +1556,109 @@ namespace CherryMP.Networking
         }
 
         void DisplayMeleeAnimation()
-        {
+	    {
             var currentTime = Function.Call<float>(Hash.GET_ENTITY_ANIM_CURRENT_TIME, Character,
-                        lastMeleeAnim.Split()[0], lastMeleeAnim.Split()[1]);
+						lastMeleeAnim.Split()[0], lastMeleeAnim.Split()[1]);
 
-            UpdatePlayerPedPos();
+			UpdatePlayerPedPos();
 
-            if (!meleeSwingDone && CurrentWeapon != unchecked((int)WeaponHash.Unarmed))
-            {
-                var gunEntity = Function.Call<Prop>((Hash)0x3B390A939AF0B5FC, Character);
-                if (gunEntity != null)
-                {
-                    Vector3 min;
-                    Vector3 max;
-                    gunEntity.Model.GetDimensions(out min, out max);
-                    var start = gunEntity.GetOffsetInWorldCoords(min);
-                    var end = gunEntity.GetOffsetInWorldCoords(max);
-                    var ray = World.RaycastCapsule(start, end, (int)Math.Abs(end.X - start.X),
-                        IntersectOptions.Peds1, Character);
-                    //Function.Call(Hash.DRAW_LINE, start.X, start.Y, start.Z, end.X, end.Y, end.Z, 255, 255, 255, 255);
-                    if (ray.DitHit && ray.DitHitEntity &&
-                        ray.HitEntity.Handle == Game.Player.Character.Handle)
-                    {
+			if (!meleeSwingDone && CurrentWeapon != unchecked((int)WeaponHash.Unarmed))
+			{
+				var gunEntity = Function.Call<Prop>((Hash)0x3B390A939AF0B5FC, Character);
+				if (gunEntity != null)
+				{
+					gunEntity.Model.GetDimensions(out Vector3 min, out Vector3 max);
+					var start = gunEntity.GetOffsetInWorldCoords(min);
+					var end = gunEntity.GetOffsetInWorldCoords(max);
+					var ray = World.RaycastCapsule(start, end, (int)Math.Abs(end.X - start.X),
+						IntersectOptions.Peds1, Character);
+					//Function.Call(Hash.DRAW_LINE, start.X, start.Y, start.Z, end.X, end.Y, end.Z, 255, 255, 255, 255);
+					if (ray.DitHit && ray.DitHitEntity &&
+						ray.HitEntity.Handle == Game.Player.Character.Handle)
+					{
                         LocalHandle them = new LocalHandle(Character.Handle, HandleType.GameHandle);
                         JavascriptHook.InvokeCustomEvent(api =>
                             api.invokeonLocalPlayerMeleeHit(them, CurrentWeapon));
 
                         if (!Main.NetEntityHandler.LocalCharacter.IsInvincible)
                             Game.Player.Character.ApplyDamage(25);
-                        meleeSwingDone = true;
-                    }
-                }
-            }
-            else if (!meleeSwingDone && CurrentWeapon == unchecked((int)WeaponHash.Unarmed))
-            {
-                var rightfist = Character.GetBoneCoord(Bone.IK_R_Hand);
-                var start = rightfist - new Vector3(0, 0, 0.5f);
-                var end = rightfist + new Vector3(0, 0, 0.5f);
-                var ray = World.RaycastCapsule(start, end, (int)Math.Abs(end.X - start.X), IntersectOptions.Peds1, Character);
-                if (ray.DitHit && ray.DitHitEntity && ray.HitEntity.Handle == Game.Player.Character.Handle)
-                {
+						meleeSwingDone = true;
+					}
+				}
+			}
+			else if (!meleeSwingDone && CurrentWeapon == unchecked((int)WeaponHash.Unarmed))
+			{
+				var rightfist = Character.GetBoneCoord(Bone.IK_R_Hand);
+				var start = rightfist - new Vector3(0, 0, 0.5f);
+				var end = rightfist + new Vector3(0, 0, 0.5f);
+				var ray = World.RaycastCapsule(start, end, (int)Math.Abs(end.X - start.X), IntersectOptions.Peds1, Character);
+				if (ray.DitHit && ray.DitHitEntity && ray.HitEntity.Handle == Game.Player.Character.Handle)
+				{
                     LocalHandle them = new LocalHandle(Character.Handle, HandleType.GameHandle);
                     JavascriptHook.InvokeCustomEvent(api =>
                         api.invokeonLocalPlayerMeleeHit(them, CurrentWeapon));
                     if (!Main.NetEntityHandler.LocalCharacter.IsInvincible)
                         Game.Player.Character.ApplyDamage(25);
-                    meleeSwingDone = true;
-                }
-            }
+					meleeSwingDone = true;
+				}
+			}
 
-            DEBUG_STEP = 28;
-            if (currentTime >= 0.95f)
-            {
-                lastMeleeAnim = null;
-                meleeSwingDone = false;
-            }
+			DEBUG_STEP = 28;
+			if (currentTime >= 0.95f)
+			{
+				lastMeleeAnim = null;
+			    meleeSwingDone = false;
+			}
 
-            if (currentTime >= meleeanimationend)
-            {
-                Character.Task.ClearAnimation(lastMeleeAnim.Split()[0], lastMeleeAnim.Split()[1]);
-                lastMeleeAnim = null;
-                meleeSwingDone = false;
-            }
-        }
+			if (currentTime >= meleeanimationend)
+			{
+				Character.Task.ClearAnimation(lastMeleeAnim.Split()[0], lastMeleeAnim.Split()[1]);
+				lastMeleeAnim = null;
+				meleeSwingDone = false;
+			}
+		}
 
-        void DisplayMeleeCombat()
-        {
+	    void DisplayMeleeCombat()
+	    {
             string secondaryAnimDict = null;
-            var ourAnim = GetMovementAnim(OnFootSpeed, false, false);
-            var hands = GetWeaponHandsHeld(CurrentWeapon);
-            var secAnim = ourAnim;
-            if (hands == 3) secondaryAnimDict = "move_strafe@melee_small_weapon";
-            if (hands == 4) secondaryAnimDict = "move_strafe@melee_large_weapon";
-            if (hands == 0)
-            {
-                secondaryAnimDict = "melee@unarmed@streamed_core_fps";
-                secAnim = "idle";
-            }
-            //
+			var ourAnim = GetMovementAnim(OnFootSpeed, false ,false);
+			var hands = GetWeaponHandsHeld(CurrentWeapon);
+			var secAnim = ourAnim;
+			if (hands == 3) secondaryAnimDict = "move_strafe@melee_small_weapon";
+			if (hands == 4) secondaryAnimDict = "move_strafe@melee_large_weapon";
+			if (hands == 0)
+			{
+				secondaryAnimDict = "melee@unarmed@streamed_core_fps";
+				secAnim = "idle";
+			}
+			//
 
-            var animDict = GetAnimDictionary();
+			var animDict = GetAnimDictionary();
+            
+			if (animDict != null &&
+				!Function.Call<bool>(Hash.IS_ENTITY_PLAYING_ANIM, Character, animDict, ourAnim,
+					3))
+			{
+				Function.Call(Hash.TASK_PLAY_ANIM, Character, Util.Util.LoadDict(animDict), ourAnim,
+					8f, 10f, -1, 0, -8f, 1, 1, 1);
+			}
 
-            if (animDict != null &&
-                !Function.Call<bool>(Hash.IS_ENTITY_PLAYING_ANIM, Character, animDict, ourAnim,
-                    3))
-            {
-                Function.Call(Hash.TASK_PLAY_ANIM, Character, Util.Util.LoadDict(animDict), ourAnim,
-                    8f, 10f, -1, 0, -8f, 1, 1, 1);
-            }
-
-            if (secondaryAnimDict != null &&
-                !Function.Call<bool>(Hash.IS_ENTITY_PLAYING_ANIM, Character, secondaryAnimDict, secAnim,
-                    3))
-            {
+			if (secondaryAnimDict != null &&
+				!Function.Call<bool>(Hash.IS_ENTITY_PLAYING_ANIM, Character, secondaryAnimDict, secAnim,
+					3))
+			{
                 Character.Task.ClearSecondary();
-                Function.Call(Hash.TASK_PLAY_ANIM, Character, Util.Util.LoadDict(secondaryAnimDict), secAnim,
-                    8f, 10f, -1, 32 | 16 | 1, -8f, 1, 1, 1);
-            }
+				Function.Call(Hash.TASK_PLAY_ANIM, Character, Util.Util.LoadDict(secondaryAnimDict), secAnim,
+					8f, 10f, -1, 32 | 16 | 1, -8f, 1, 1, 1);
+			}
 
-            UpdatePlayerPedPos();
-        }
+			UpdatePlayerPedPos();
+		}
 
-        void DisplayAimingAnimation()
-        {
+	    void DisplayAimingAnimation()
+	    {
             var hands = GetWeaponHandsHeld(CurrentWeapon);
-            /*if (IsReloading)
+	        /*if (IsReloading)
 	        {
                 UpdatePlayerPedPos();
                 return;
@@ -1701,50 +1689,50 @@ namespace CherryMP.Networking
 
         }
 
-        void DisplayMeleeAnimation(int hands)
-        {
+	    void DisplayMeleeAnimation(int hands)
+	    {
             Character.Task.ClearSecondary();
 
-            var ourAnim = "";
-            var anim = 0;
-            if (hands == 3)
-            {
-                ourAnim = "melee@small_wpn@streamed_core_fps small_melee_wpn_short_range_0";
-                anim = 0;
-                meleeanimationend = 0.3f;
-            }
-            if (hands == 4)
-            {
-                ourAnim = "melee@large_wpn@streamed_core short_0_attack";
-                meleeanimationend = 0.55f;
-                anim = 1;
-            }
-            if (hands == 0)
-            {
-                ourAnim = "melee@unarmed@streamed_core_fps heavy_punch_a";
-                meleeanimationend = 0.9f;
-                anim = 2;
-            }
-            if (CurrentWeapon == unchecked((int)WeaponHash.Knife) || CurrentWeapon == -538741184 ||
-                CurrentWeapon == unchecked((int)WeaponHash.Dagger))
-            {
-                ourAnim = "melee@knife@streamed_core knife_short_range_0";
-                meleeanimationend = 0.9f;
-                anim = 2;
-            }
+			var ourAnim = "";
+			var anim = 0;
+			if (hands == 3)
+			{
+				ourAnim = "melee@small_wpn@streamed_core_fps small_melee_wpn_short_range_0";
+				anim = 0;
+				meleeanimationend = 0.3f;
+			}
+			if (hands == 4)
+			{
+				ourAnim = "melee@large_wpn@streamed_core short_0_attack";
+				meleeanimationend = 0.55f;
+				anim = 1;
+			}
+			if (hands == 0)
+			{
+				ourAnim = "melee@unarmed@streamed_core_fps heavy_punch_a";
+				meleeanimationend = 0.9f;
+				anim = 2;
+			}
+			if (CurrentWeapon == unchecked((int)WeaponHash.Knife) || CurrentWeapon == -538741184 ||
+				CurrentWeapon == unchecked((int)WeaponHash.Dagger))
+			{
+				ourAnim = "melee@knife@streamed_core knife_short_range_0";
+				meleeanimationend = 0.9f;
+				anim = 2;
+			}
 
-            DEBUG_STEP = 31;
-            lastMeleeAnim = ourAnim;
+			DEBUG_STEP = 31;
+			lastMeleeAnim = ourAnim;
 
-            if (
-                !Function.Call<bool>(Hash.IS_ENTITY_PLAYING_ANIM, Character, ourAnim.Split()[0],
-                    ourAnim.Split()[1],
-                    3))
-            {
-                Function.Call(Hash.TASK_PLAY_ANIM, Character, Util.Util.LoadDict(ourAnim.Split()[0]),
-                    ourAnim.Split()[1],
-                    8f, 10f, -1, 0, -8f, 1, 1, 1);
-            }
+			if (
+				!Function.Call<bool>(Hash.IS_ENTITY_PLAYING_ANIM, Character, ourAnim.Split()[0],
+					ourAnim.Split()[1],
+					3))
+			{
+				Function.Call(Hash.TASK_PLAY_ANIM, Character, Util.Util.LoadDict(ourAnim.Split()[0]),
+					ourAnim.Split()[1],
+					8f, 10f, -1, 0, -8f, 1, 1, 1);
+			}
 #if !DISABLE_SLERP
             var latency = DataLatency + TicksSinceLastUpdate;
             Character.Quaternion = GTA.Math.Quaternion.Slerp(Character.Quaternion, _rotation.ToQuaternion(),
@@ -1754,115 +1742,115 @@ namespace CherryMP.Networking
 #endif
         }
 
-        void DisplayWeaponShootingAnimation()
-        {
+	    void DisplayWeaponShootingAnimation()
+	    {
             var ourAnim = GetMovementAnim(OnFootSpeed, IsInCover, IsCoveringToLeft);
-            var animDict = GetAnimDictionary(ourAnim);
+			var animDict = GetAnimDictionary(ourAnim);
 
             //var playerHealth = BitConverter.GetBytes(Game.Player.Character.Health);
             //var playerArmor = BitConverter.GetBytes(Game.Player.Character.Armor);
 
             if (!IsInCover)
-            {
+	        {
                 Character.Task.ClearSecondary();
 
-                if (animDict != null && Function.Call<bool>(Hash.IS_ENTITY_PLAYING_ANIM, Character, animDict, ourAnim, 3))
-                {
-                    Character.Task.ClearAnimation(animDict, ourAnim);
-                }
-            }
-            else if (animDict != null)
-            {
+	            if (animDict != null && Function.Call<bool>(Hash.IS_ENTITY_PLAYING_ANIM, Character, animDict, ourAnim, 3))
+	            {
+	                Character.Task.ClearAnimation(animDict, ourAnim);
+	            }
+	        }
+	        else if (animDict != null)
+	        {
                 Function.Call(Hash.TASK_PLAY_ANIM, Character, Util.Util.LoadDict(animDict), ourAnim,
                     8f, 10f, -1, 2, -8f, 1, 1, 1);
             }
 
-            Function.Call(Hash.SET_AI_WEAPON_DAMAGE_MODIFIER, 1f);
-            Function.Call(Hash.SET_PED_SHOOT_RATE, Character, 100);
+	        Function.Call(Hash.SET_AI_WEAPON_DAMAGE_MODIFIER, 1f);
+	        Function.Call(Hash.SET_PED_SHOOT_RATE, Character, 100);
             Function.Call(Hash.SET_PED_INFINITE_AMMO_CLIP, Character, true);
 
-            if (!IsInCover)
-            {
-                DisplayAimingAnimation();
-            }
+	        if (!IsInCover)
+	        {
+	            DisplayAimingAnimation();
+	        }
 
-            var gunEnt = Function.Call<Prop>((Hash)0x3B390A939AF0B5FC, Character);
-            if (gunEnt != null)
-            {
+	        var gunEnt = Function.Call<Prop>((Hash)0x3B390A939AF0B5FC, Character);
+	        if (gunEnt != null)
+	        {
                 //var start = gunEnt.GetOffsetInWorldCoords(new Vector3(0, 0, 0));
                 var start = gunEnt.Position;
                 var dir = (AimCoords - start);
-                dir.Normalize();
-                var end = start + dir * 100f;
+	            dir.Normalize();
+	            var end = start + dir*100f;
 
-                if (IsInCover) // Weapon spread
-                {
-                    end += Vector3.RandomXYZ() * 2f;
-                }
+	            if (IsInCover) // Weapon spread
+	            {
+	                end += Vector3.RandomXYZ()*2f;
+	            }
 
-                if (!WeaponDataProvider.NeedsFakeBullets(CurrentWeapon))
-                {
-                    Function.Call(Hash.SET_PED_SHOOTS_AT_COORD, Character, end.X, end.Y, end.Z, true);
-                }
-                else
-                {
-                    var damage = WeaponDataProvider.GetWeaponDamage((WeaponHash)CurrentWeapon);
-                    var speed = 0xbf800000;
-                    var weaponH = (WeaponHash)CurrentWeapon;
+	            if (!WeaponDataProvider.NeedsFakeBullets(CurrentWeapon))
+	            {
+	                Function.Call(Hash.SET_PED_SHOOTS_AT_COORD, Character, end.X, end.Y, end.Z, true);
+	            }
+	            else
+	            {
+	                var damage = WeaponDataProvider.GetWeaponDamage((WeaponHash) CurrentWeapon);
+	                var speed = 0xbf800000;
+	                var weaponH = (WeaponHash) CurrentWeapon;
 
 
-                    if (weaponH == WeaponHash.Minigun)
-                        weaponH = WeaponHash.CombatPDW;
+	                if (weaponH == WeaponHash.Minigun)
+	                    weaponH = WeaponHash.CombatPDW;
 
-                    if (IsFriend())
-                        damage = 0;
+	                if (IsFriend())
+	                    damage = 0;
 
-                    Function.Call(Hash.SHOOT_SINGLE_BULLET_BETWEEN_COORDS, start.X, start.Y, start.Z,
-                        end.X,
-                        end.Y, end.Z, damage, true, (int)weaponH, Character, false, true, speed);
+	                Function.Call(Hash.SHOOT_SINGLE_BULLET_BETWEEN_COORDS, start.X, start.Y, start.Z,
+	                    end.X,
+	                    end.Y, end.Z, damage, true, (int) weaponH, Character, false, true, speed);
 
-                    _lastStart = start;
-                    _lastEnd = end;
-                }
+	                _lastStart = start;
+	                _lastEnd = end;
+	            }
 
-                if (Function.Call<bool>(Hash.HAS_ENTITY_BEEN_DAMAGED_BY_ENTITY, Game.Player.Character, Character, true))
-                {
+	            if (Function.Call<bool>(Hash.HAS_ENTITY_BEEN_DAMAGED_BY_ENTITY, Game.Player.Character, Character, true))
+	            {
 
-                    int boneHit = -1;
+	                int boneHit = -1;
                     var boneHitArg = new OutputArgument();
 
-                    if (Function.Call<bool>(Hash.GET_PED_LAST_DAMAGE_BONE, Game.Player.Character, boneHitArg))
-                    {
-                        boneHit = boneHitArg.GetResult<int>();
-                    }
+	                if (Function.Call<bool>(Hash.GET_PED_LAST_DAMAGE_BONE, Game.Player.Character, boneHitArg))
+	                {
+	                    boneHit = boneHitArg.GetResult<int>();
+	                }
 
                     LocalHandle them = new LocalHandle(Character.Handle, HandleType.GameHandle);
                     JavascriptHook.InvokeCustomEvent(api =>
                         api.invokeonLocalPlayerDamaged(them, CurrentWeapon, boneHit/*, playerHealth, playerArmor*/));
-                }
+	            }
 
                 Function.Call(Hash.CLEAR_ENTITY_LAST_DAMAGE_ENTITY, Character);
                 Function.Call(Hash.CLEAR_ENTITY_LAST_DAMAGE_ENTITY, Game.Player.Character);
             }
         }
 
-        void DisplayShootingAnimation()
-        {
+	    void DisplayShootingAnimation()
+	    {
             var hands = GetWeaponHandsHeld(CurrentWeapon);
             if (IsReloading) return;
-            if (hands == 3 || hands == 4 || hands == 0)
-            {
-                DisplayMeleeAnimation(hands);
-            }
-            else
-            {
+			if (hands == 3 || hands == 4 || hands == 0)
+			{
+				DisplayMeleeAnimation(hands);
+			}
+			else
+			{
                 DisplayWeaponShootingAnimation();
             }
-
+            
             //UpdatePlayerPedPos();
 
-            if (WeaponDataProvider.NeedsManualRotation(CurrentWeapon))
-            {
+	        if (WeaponDataProvider.NeedsManualRotation(CurrentWeapon))
+	        {
 #if !DISABLE_SLERP
                 var latency = DataLatency + TicksSinceLastUpdate;
                 Character.Quaternion = GTA.Math.Quaternion.Slerp(Character.Quaternion, _rotation.ToQuaternion(),
@@ -1871,50 +1859,50 @@ namespace CherryMP.Networking
                 Character.Quaternion = Rotation.ToQuaternion();
 #endif
             }
-        }
+		}
 
-        void DisplayWalkingAnimation(bool displaySecondary = true)
-        {
-            if (IsReloading || (IsInCover && IsShooting && !IsAiming)) return;
+	    void DisplayWalkingAnimation(bool displaySecondary = true)
+	    {
+	        if (IsReloading || (IsInCover && IsShooting && !IsAiming)) return;
 
             var ourAnim = GetMovementAnim(OnFootSpeed, IsInCover, IsCoveringToLeft);
-            var animDict = GetAnimDictionary(ourAnim);
-            var secondaryAnimDict = GetSecondaryAnimDict();
-            var flag = GetAnimFlag();
+			var animDict = GetAnimDictionary(ourAnim);
+			var secondaryAnimDict = GetSecondaryAnimDict();
+	        var flag = GetAnimFlag();
 
-            DEBUG_STEP = 34;
+			DEBUG_STEP = 34;
 
-            if (animDict != null && !Function.Call<bool>(Hash.IS_ENTITY_PLAYING_ANIM, Character, animDict, ourAnim,
-                    3))
-            {
-                Function.Call(Hash.TASK_PLAY_ANIM, Character, Util.Util.LoadDict(animDict), ourAnim,
-                    8f, 10f, -1, flag, -8f, 1, 1, 1);
-            }
+			if (animDict != null && !Function.Call<bool>(Hash.IS_ENTITY_PLAYING_ANIM, Character, animDict, ourAnim,
+					3))
+			{
+			    Function.Call(Hash.TASK_PLAY_ANIM, Character, Util.Util.LoadDict(animDict), ourAnim,
+			        8f, 10f, -1, flag, -8f, 1, 1, 1);
+			}
 
-            if (displaySecondary)
-            {
-                if (secondaryAnimDict != null &&
-                    !Function.Call<bool>(Hash.IS_ENTITY_PLAYING_ANIM, Character, secondaryAnimDict, ourAnim,
-                        3))
-                {
-                    Function.Call(Hash.TASK_PLAY_ANIM, Character, Util.Util.LoadDict(secondaryAnimDict), ourAnim,
-                        8f, 10f, -1, 32 | 16 | 1, -8f, 1, 1, 1);
-                }
-                else if (secondaryAnimDict == null)
-                {
-                    Character.Task.ClearSecondary();
-                }
-            }
-        }
+	        if (displaySecondary)
+	        {
+	            if (secondaryAnimDict != null &&
+	                !Function.Call<bool>(Hash.IS_ENTITY_PLAYING_ANIM, Character, secondaryAnimDict, ourAnim,
+	                    3))
+	            {
+	                Function.Call(Hash.TASK_PLAY_ANIM, Character, Util.Util.LoadDict(secondaryAnimDict), ourAnim,
+	                    8f, 10f, -1, 32 | 16 | 1, -8f, 1, 1, 1);
+	            }
+	            else if (secondaryAnimDict == null)
+	            {
+	                Character.Task.ClearSecondary();
+	            }
+	        }
+	    }
 
-        bool UpdateOnFootPosition()
-        {
+		bool UpdateOnFootPosition()
+		{
             UpdateProps();
 
             DEBUG_STEP = 23;
 
             UpdateCurrentWeapon();
-
+            
             if (!_lastJumping && IsJumping)
             {
                 Character.Task.Jump();
@@ -2115,8 +2103,8 @@ namespace CherryMP.Networking
                 VMultiOnfootPosition();
             }
 
-            return false;
-        }
+			return false;
+	    }
 
         private Vector3 _lastAimCoords;
         private Prop _aimingProp;
@@ -2139,7 +2127,7 @@ namespace CherryMP.Networking
 
             float lerpValue = 0f;
             var length = Position.DistanceToSquared(Character.Position);
-
+            
             if (length > 0.05f * 0.05f && length < StreamerThread.PlayerStreamingRange * StreamerThread.PlayerStreamingRange)
             {
                 lerpValue = lerpValue + ((tServer * 2) / 50000f);
@@ -2183,7 +2171,7 @@ namespace CherryMP.Networking
             Character.Quaternion = GTA.Math.Quaternion.Lerp(Character.Quaternion, Rotation.ToQuaternion(), 0.10f); // mise à jours de la rotation
 
             if (length < StreamerThread.PlayerStreamingRange * StreamerThread.PlayerStreamingRange)
-            {
+            { 
                 Character.Velocity = PedVelocity; // Mise à jours de la vitesse
 
                 var ourAnim = GetMovementAnim(OnFootSpeed, IsInCover, IsCoveringToLeft);
@@ -2381,69 +2369,49 @@ namespace CherryMP.Networking
         internal void DisplayLocally()
         {
             if (!StreamedIn || IsSpectating || (Flag & (int)EntityFlag.PlayerSpectating) != 0 || ModelHash == 0 || string.IsNullOrEmpty(Name)) return;
-            bool inRange = Game.Player.Character.IsInRangeOfEx(Position, hRange);
 
-            if (inRange)
+            if (Environment.TickCount - _lastTickUpdate > 500)
             {
-#if DEBUG
-                PedThread.InRangePlayers++;
-#endif
-                if (Environment.TickCount - _lastTickUpdate > 500)
+                _lastTickUpdate = Environment.TickCount;
+                if (CreateCharacter()) return;
+                if (CreateVehicle()) return;
+
+                if (Character != null)
                 {
-                    _lastTickUpdate = Environment.TickCount;
-                    if (CreateCharacter(Position, inRange)) return;
-                    if (CreateVehicle()) return;
-
-                    if (Character != null)
+                    Character.Health = PedHealth;
+                    if (IsPlayerDead && !Character.IsDead && IsInVehicle)
                     {
-                        Character.Health = PedHealth;
-                        if (IsPlayerDead && !Character.IsDead && IsInVehicle)
-                        {
-                            Function.Call(Hash.SET_PED_PLAYS_HEAD_ON_HORN_ANIM_WHEN_DIES_IN_VEHICLE, Character, true);
-                            Character.IsInvincible = false;
-                            Character.Kill();
-                        }
+                        Function.Call(Hash.SET_PED_PLAYS_HEAD_ON_HORN_ANIM_WHEN_DIES_IN_VEHICLE, Character, true);
+                        Character.IsInvincible = false;
+                        Character.Kill();
+                    }
 
-                        Function.Call(Hash.SET_PED_CONFIG_FLAG, Character, 400, true); // Can attack friendlies
-                    }
-                    WorkaroundBlip();
+                    Function.Call(Hash.SET_PED_CONFIG_FLAG, Character, 400, true); // Can attack friendlies
                 }
-                if (Character != null && Character.Exists())
-                {
-                    bool enteringSeat = _seatEnterStart != 0 && Util.Util.TickCount - _seatEnterStart < 500;
-                    if (UpdatePlayerPosOutOfRange(Position, Game.Player.Character.IsInRangeOfEx(Position, StreamerThread.PlayerStreamingRange))) return;
-
-                    if ((enteringSeat || Character.IsSubtaskActive(67) || IsBeingControlledByScript || Character.IsExitingLeavingCar()))
-                    {
-                        DrawNametag();
-                        return;
-                    }
-#if DEBUG
-                    if (PedThread.ToggleUpdate) {
-#endif
-                    UpdatePosition();
-#if DEBUG
-                    }
-                    if (PedThread.ToggleNametag) {
-#endif
-                    DrawNametag();
-#if DEBUG
-                    }
-#endif
-                    _lastJumping = IsJumping;
-                    _lastFreefall = IsFreefallingWithParachute;
-                    _lastShooting = IsShooting;
-                    _lastAiming = IsAiming;
-                    _lastVehicle = _isInVehicle;
-                    _lastEnteringVehicle = EnteringVehicle;
-                }
+                WorkaroundBlip();
             }
-            else
+
+            if (Character != null && Character.Exists())
             {
-                if (Character != null && Character.Exists() && Environment.TickCount - _lastTickUpdate > 500)
+                bool enteringSeat = _seatEnterStart != 0 && Util.Util.TickCount - _seatEnterStart < 500;
+                if (UpdatePlayerPosOutOfRange(Position, Game.Player.Character.IsInRangeOfEx(Position, StreamerThread.PlayerStreamingRange))) return;
+
+                if ((enteringSeat || Character.IsSubtaskActive(67) || IsBeingControlledByScript || Character.IsExitingLeavingCar()))
                 {
-                    Character.Delete();
+                    if (!Main.ToggleNametagDraw) DrawNametag();
+                    return;
                 }
+
+                if (!Main.TogglePosUpdate) UpdatePosition();
+
+                if (!Main.ToggleNametagDraw) DrawNametag();
+
+                _lastJumping = IsJumping;
+                _lastFreefall = IsFreefallingWithParachute;
+                _lastShooting = IsShooting;
+                _lastAiming = IsAiming;
+                _lastVehicle = _isInVehicle;
+                _lastEnteringVehicle = EnteringVehicle;
             }
         }
 
@@ -2506,14 +2474,14 @@ namespace CherryMP.Networking
             else
             {
                 var latency = DataLatency + TicksSinceLastUpdate;
-                newPos = Position + (PedVelocity * latency / 1000);
+                newPos = Position + (PedVelocity*latency/1000);
             }
 
             if ((OnFootSpeed > 0 || IsAnimal(ModelHash)) && currentInterop.FinishTime != 0)
             {
                 if (Game.Player.Character.IsInRangeOfEx(newPos, StreamerThread.PlayerStreamingRange))
                 {
-                    Character.Velocity = PedVelocity + 10 * (newPos - Character.Position);
+                    Character.Velocity = PedVelocity + 10*(newPos - Character.Position);
                 }
                 else
                 {
@@ -2556,7 +2524,7 @@ namespace CherryMP.Networking
                 if (!Character.IsSwimmingUnderWater)
                 {
                     Character.Quaternion = GTA.Math.Quaternion.Slerp(Character.Quaternion, _rotation.ToQuaternion(),
-                        Math.Min(1f, (DataLatency + TicksSinceLastUpdate) / (float)AverageLatency));
+                        Math.Min(1f, (DataLatency + TicksSinceLastUpdate)/(float) AverageLatency));
                 }
                 else
                 {
@@ -2581,42 +2549,42 @@ namespace CherryMP.Networking
                 if (hands == 2 || hands == 5) return "cover@weapon@2h";
             }
 
-            if (hands == 1) return "cover@idles@1h@" + altitude + "@_a";
-            if (hands == 2 || hands == 5) return "cover@idles@2h@" + altitude + "@_a";
+            if (hands == 1) return "cover@idles@1h@" + altitude +"@_a";
+            if (hands == 2 || hands == 5) return "cover@idles@2h@" + altitude +"@_a";
             if (hands == 3 || hands == 4 || hands == 0) return "cover@idles@unarmed@" + altitude + "@_a";
             return "";
         }
 
         internal string GetSecondaryAnimDict()
         {
-            if (CurrentWeapon == unchecked((int)WeaponHash.Unarmed)) return null;
-            if (CurrentWeapon == unchecked((int)WeaponHash.RPG) ||
-                CurrentWeapon == unchecked((int)WeaponHash.HomingLauncher) ||
+	        if (CurrentWeapon == unchecked((int) WeaponHash.Unarmed)) return null;
+            if (CurrentWeapon == unchecked((int) WeaponHash.RPG) ||
+                CurrentWeapon == unchecked((int) WeaponHash.HomingLauncher) ||
                 CurrentWeapon == unchecked((int)WeaponHash.Firework))
                 return "weapons@heavy@rpg";
-            if (CurrentWeapon == unchecked((int)WeaponHash.Minigun))
+            if (CurrentWeapon == unchecked((int) WeaponHash.Minigun))
                 return "weapons@heavy@minigun";
-            if (CurrentWeapon == unchecked((int)WeaponHash.GolfClub) ||
-                CurrentWeapon == unchecked((int)WeaponHash.Bat))
+            if (CurrentWeapon == unchecked((int) WeaponHash.GolfClub) ||
+                CurrentWeapon == unchecked((int) WeaponHash.Bat))
                 return "weapons@melee_2h";
             if (Function.Call<int>(Hash.GET_WEAPONTYPE_SLOT, CurrentWeapon) ==
-                     Function.Call<int>(Hash.GET_WEAPONTYPE_SLOT, unchecked((int)WeaponHash.Bat)))
+                     Function.Call<int>(Hash.GET_WEAPONTYPE_SLOT, unchecked((int) WeaponHash.Bat)))
                 return "weapons@melee_1h";
             if (CurrentWeapon == -1357824103 || CurrentWeapon == -1074790547 ||
                 (CurrentWeapon == 2132975508 || CurrentWeapon == -2084633992) ||
                 (CurrentWeapon == -952879014 || CurrentWeapon == 100416529) ||
-                CurrentWeapon == unchecked((int)WeaponHash.Gusenberg) ||
-                CurrentWeapon == unchecked((int)WeaponHash.MG) || CurrentWeapon == unchecked((int)WeaponHash.CombatMG) ||
-                CurrentWeapon == unchecked((int)WeaponHash.CombatPDW) ||
-                CurrentWeapon == unchecked((int)WeaponHash.AssaultSMG) ||
-                CurrentWeapon == unchecked((int)WeaponHash.SMG) ||
-                CurrentWeapon == unchecked((int)WeaponHash.HeavySniper) ||
-                CurrentWeapon == unchecked((int)WeaponHash.PumpShotgun) ||
-                CurrentWeapon == unchecked((int)WeaponHash.HeavyShotgun) ||
-                CurrentWeapon == unchecked((int)WeaponHash.Musket) ||
-                CurrentWeapon == unchecked((int)WeaponHash.AssaultShotgun) ||
-                CurrentWeapon == unchecked((int)WeaponHash.BullpupShotgun) ||
-                CurrentWeapon == unchecked((int)WeaponHash.SawnOffShotgun) ||
+                CurrentWeapon == unchecked((int) WeaponHash.Gusenberg) ||
+                CurrentWeapon == unchecked((int) WeaponHash.MG) || CurrentWeapon == unchecked((int) WeaponHash.CombatMG) ||
+                CurrentWeapon == unchecked((int) WeaponHash.CombatPDW) ||
+                CurrentWeapon == unchecked((int) WeaponHash.AssaultSMG) ||
+                CurrentWeapon == unchecked((int) WeaponHash.SMG) ||
+                CurrentWeapon == unchecked((int) WeaponHash.HeavySniper) ||
+                CurrentWeapon == unchecked((int) WeaponHash.PumpShotgun) ||
+                CurrentWeapon == unchecked((int) WeaponHash.HeavyShotgun) ||
+                CurrentWeapon == unchecked((int) WeaponHash.Musket) ||
+                CurrentWeapon == unchecked((int) WeaponHash.AssaultShotgun) ||
+                CurrentWeapon == unchecked((int) WeaponHash.BullpupShotgun) ||
+                CurrentWeapon == unchecked((int) WeaponHash.SawnOffShotgun) ||
                 CurrentWeapon == unchecked((int)WeaponHash.GrenadeLauncher) ||
                 CurrentWeapon == unchecked((int)WeaponHash.Railgun))
                 return "move_weapon@rifle@generic";
@@ -2625,7 +2593,7 @@ namespace CherryMP.Networking
 
         internal int GetWeaponHandsHeld(int weapon)
         {
-            if (weapon == unchecked((int)WeaponHash.Unarmed)) return 0;
+            if (weapon == unchecked((int) WeaponHash.Unarmed)) return 0;
             if (weapon == unchecked((int)WeaponHash.RPG) ||
                 weapon == unchecked((int)WeaponHash.HomingLauncher) ||
                 weapon == unchecked((int)WeaponHash.Firework))
@@ -2636,12 +2604,12 @@ namespace CherryMP.Networking
                 weapon == unchecked((int)CherryMPShared.WeaponHash.Poolcue) ||
                 weapon == unchecked((int)WeaponHash.Bat))
                 return 4;
-            if (weapon == unchecked((int)WeaponHash.Knife) || weapon == unchecked((int)WeaponHash.Nightstick) ||
-                weapon == unchecked((int)WeaponHash.Hammer) || weapon == unchecked((int)WeaponHash.Crowbar) ||
+            if (weapon == unchecked((int) WeaponHash.Knife) || weapon == unchecked((int) WeaponHash.Nightstick) ||
+                weapon == unchecked((int) WeaponHash.Hammer) || weapon == unchecked((int) WeaponHash.Crowbar) ||
                 weapon == unchecked((int)CherryMPShared.WeaponHash.Wrench) ||
                 weapon == unchecked((int)CherryMPShared.WeaponHash.Battleaxe) ||
-                weapon == unchecked((int)WeaponHash.Dagger) || weapon == unchecked((int)WeaponHash.Hatchet) ||
-                weapon == unchecked((int)WeaponHash.KnuckleDuster) || weapon == -581044007 || weapon == -102323637 || weapon == -538741184)
+                weapon == unchecked((int) WeaponHash.Dagger) || weapon == unchecked((int) WeaponHash.Hatchet) ||
+                weapon == unchecked((int) WeaponHash.KnuckleDuster) || weapon == -581044007 || weapon == -102323637 || weapon == -538741184)
                 return 3;
             if (weapon == -1357824103 || weapon == -1074790547 ||
                 (weapon == 2132975508 || weapon == -2084633992) ||
@@ -2693,7 +2661,7 @@ namespace CherryMP.Networking
                         return coverFacingLeft ? "blindfire_low_l_aim_med" : "blindfire_low_r_aim_med";
                     return coverFacingLeft ? "blindfire_hi_l_aim_med" : "blindfire_hi_r_aim_med";
                 }
-
+                
                 return coverFacingLeft ? "idle_l_corner" : "idle_r_corner";
             }
 
@@ -2711,8 +2679,8 @@ namespace CherryMP.Networking
 
             if (IsVaulting) return "standclimbup_180_low";
 
-            if (GetAnimalAnimationName(ModelHash, speed) != null)
-                return GetAnimalAnimationName(ModelHash, speed);
+            if (GetAnimalAnimationName(ModelHash,speed) != null)
+                return GetAnimalAnimationName(ModelHash,speed);
             /*
             if (speed == 0) return "idle";
             if (speed == 1) return "walk";
@@ -2733,163 +2701,163 @@ namespace CherryMP.Networking
             switch (hash)
             {
                 case PedHash.Cat:
-                    {
-                        if (speed == 0) return "idle";
-                        if (speed == 1) return "walk";
-                        if (speed == 2) return "canter";
-                        if (speed == 3) return "gallop";
-                    }
+                {
+                    if (speed == 0) return "idle";
+                    if (speed == 1) return "walk";
+                    if (speed == 2) return "canter";
+                    if (speed == 3) return "gallop";
+                }
                     break;
                 case PedHash.Boar:
-                    {
-                        if (speed == 0) return "idle";
-                        if (speed == 1) return "walk";
-                        if (speed == 2) return "trot";
-                        if (speed == 3) return "gallop";
-                    }
+                {
+                    if (speed == 0) return "idle";
+                    if (speed == 1) return "walk";
+                    if (speed == 2) return "trot";
+                    if (speed == 3) return "gallop";
+                }
                     break;
                 case PedHash.ChickenHawk:
-                    {
-                        if (speed == 0) return "idle";
-                        if (speed == 1) return "walk";
-                        if (speed == 2) return "glide";
-                        if (speed == 3) return "flapping";
-                    }
+                {
+                    if (speed == 0) return "idle";
+                    if (speed == 1) return "walk";
+                    if (speed == 2) return "glide";
+                    if (speed == 3) return "flapping";
+                }
                     break;
                 case PedHash.Chop:
                 case PedHash.Shepherd:
-                    {
-                        if (speed == 0) return "idle";
-                        if (speed == 1) return "walk";
-                        if (speed == 2) return "canter";
-                        if (speed == 3) return "gallop";
-                    }
+                {
+                    if (speed == 0) return "idle";
+                    if (speed == 1) return "walk";
+                    if (speed == 2) return "canter";
+                    if (speed == 3) return "gallop";
+                }
                     break;
                 case PedHash.Cormorant:
-                    {
-                        if (speed == 0) return "idle";
-                        if (speed == 1) return "walk";
-                        if (speed == 2) return "glide";
-                        if (speed == 3) return "flapping";
-                    }
+                {
+                    if (speed == 0) return "idle";
+                    if (speed == 1) return "walk";
+                    if (speed == 2) return "glide";
+                    if (speed == 3) return "flapping";
+                }
                     break;
                 case PedHash.Cow:
-                    {
-                        if (speed == 0) return "idle";
-                        if (speed == 1) return "walk";
-                        if (speed == 2) return "trot";
-                        if (speed == 3) return "gallop";
-                    }
+                {
+                    if (speed == 0) return "idle";
+                    if (speed == 1) return "walk";
+                    if (speed == 2) return "trot";
+                    if (speed == 3) return "gallop";
+                }
                     break;
                 case PedHash.Coyote:
-                    {
-                        if (speed == 0) return "idle";
-                        if (speed == 1) return "walk";
-                        if (speed == 2) return "trot";
-                        if (speed == 3) return "gallop";
-                    }
+                {
+                    if (speed == 0) return "idle";
+                    if (speed == 1) return "walk";
+                    if (speed == 2) return "trot";
+                    if (speed == 3) return "gallop";
+                }
                     break;
                 case PedHash.Crow:
-                    {
-                        if (speed == 0) return "idle";
-                        if (speed == 1) return "walk";
-                        if (speed == 2) return "glide";
-                        if (speed == 3) return "flapping";
-                    }
+                {
+                    if (speed == 0) return "idle";
+                    if (speed == 1) return "walk";
+                    if (speed == 2) return "glide";
+                    if (speed == 3) return "flapping";
+                }
                     break;
                 case PedHash.Deer:
-                    {
-                        if (speed == 0) return "idle";
-                        if (speed == 1) return "walk";
-                        if (speed == 2) return "trot";
-                        if (speed == 3) return "gallop";
-                    }
+                {
+                    if (speed == 0) return "idle";
+                    if (speed == 1) return "walk";
+                    if (speed == 2) return "trot";
+                    if (speed == 3) return "gallop";
+                }
                     break;
                 case PedHash.Dolphin:
-                    {
-                        if (speed == 0) return "idle";
-                        if (speed == 1) return "swim";
-                        if (speed == 2) return "accelerate";
-                        if (speed == 3) return "accelerate";
-                    }
+                {
+                    if (speed == 0) return "idle";
+                    if (speed == 1) return "swim";
+                    if (speed == 2) return "accelerate";
+                    if (speed == 3) return "accelerate";
+                }
                     break;
                 case PedHash.Fish:
-                    {
-                        if (speed == 0) return "idle";
-                        if (speed == 1) return "swim";
-                        if (speed == 2) return "accelerate";
-                        if (speed == 3) return "accelerate";
-                    }
+                {
+                    if (speed == 0) return "idle";
+                    if (speed == 1) return "swim";
+                    if (speed == 2) return "accelerate";
+                    if (speed == 3) return "accelerate";
+                }
                     break;
                 case PedHash.Hen:
-                    {
-                        if (speed == 0) return "idle";
-                        if (speed == 1) return "walk";
-                        if (speed == 2) return "run";
-                        if (speed == 3) return "run";
-                    }
+                {
+                    if (speed == 0) return "idle";
+                    if (speed == 1) return "walk";
+                    if (speed == 2) return "run";
+                    if (speed == 3) return "run";
+                }
                     break;
                 case PedHash.Humpback:
-                    {
-                        if (speed == 0) return "idle";
-                        if (speed == 1) return "swim";
-                        if (speed == 2) return "accelerate";
-                        if (speed == 3) return "accelerate";
-                    }
+                {
+                    if (speed == 0) return "idle";
+                    if (speed == 1) return "swim";
+                    if (speed == 2) return "accelerate";
+                    if (speed == 3) return "accelerate";
+                }
                     break;
                 case PedHash.Husky:
-                    {
-                        if (speed == 0) return "idle";
-                        if (speed == 1) return "walk";
-                        if (speed == 2) return "canter";
-                        if (speed == 3) return "gallop";
-                    }
+                {
+                    if (speed == 0) return "idle";
+                    if (speed == 1) return "walk";
+                    if (speed == 2) return "canter";
+                    if (speed == 3) return "gallop";
+                }
                     break;
                 case PedHash.TigerShark:
                 case PedHash.HammerShark:
                 case PedHash.KillerWhale:
                 case PedHash.Stingray:
-                    {
-                        if (speed == 0) return "idle";
-                        if (speed == 1) return "swim";
-                        if (speed == 2) return "accelerate";
-                        if (speed == 3) return "accelerate";
-                    }
+                {
+                    if (speed == 0) return "idle";
+                    if (speed == 1) return "swim";
+                    if (speed == 2) return "accelerate";
+                    if (speed == 3) return "accelerate";
+                }
                     break;
                 case PedHash.Pig:
-                    {
-                        if (speed == 0) return "idle";
-                        if (speed == 1) return "walk";
-                        if (speed == 2) return "trot";
-                        if (speed == 3) return "gallop";
-                    }
+                {
+                    if (speed == 0) return "idle";
+                    if (speed == 1) return "walk";
+                    if (speed == 2) return "trot";
+                    if (speed == 3) return "gallop";
+                }
                     break;
                 case PedHash.Seagull:
                 case PedHash.Pigeon:
-                    {
-                        if (speed == 0) return "idle";
-                        if (speed == 1) return "walk";
-                        if (speed == 2) return "glide";
-                        if (speed == 3) return "flapping";
-                    }
+                {
+                    if (speed == 0) return "idle";
+                    if (speed == 1) return "walk";
+                    if (speed == 2) return "glide";
+                    if (speed == 3) return "flapping";
+                }
                     break;
                 case PedHash.Pug:
                 case PedHash.Poodle:
                 case PedHash.Westy:
-                    {
-                        if (speed == 0) return "idle";
-                        if (speed == 1) return "walk";
-                        if (speed == 2) return "canter";
-                        if (speed == 3) return "gallop";
-                    }
+                {
+                    if (speed == 0) return "idle";
+                    if (speed == 1) return "walk";
+                    if (speed == 2) return "canter";
+                    if (speed == 3) return "gallop";
+                }
                     break;
                 case PedHash.Rabbit:
-                    {
-                        if (speed == 0) return "idle";
-                        if (speed == 1) return "walk";
-                        if (speed == 2) return "canter";
-                        if (speed == 3) return "gallop";
-                    }
+                {
+                    if (speed == 0) return "idle";
+                    if (speed == 1) return "walk";
+                    if (speed == 2) return "canter";
+                    if (speed == 3) return "gallop";
+                }
                     break;
                 case PedHash.Rat:
                     {
@@ -2901,12 +2869,12 @@ namespace CherryMP.Networking
                     break;
                 case PedHash.Rottweiler:
                 case PedHash.Retriever:
-                    {
-                        if (speed == 0) return "idle";
-                        if (speed == 1) return "walk";
-                        if (speed == 2) return "canter";
-                        if (speed == 3) return "gallop";
-                    }
+                {
+                    if (speed == 0) return "idle";
+                    if (speed == 1) return "walk";
+                    if (speed == 2) return "canter";
+                    if (speed == 3) return "gallop";
+                }
                     break;
             }
 
@@ -2973,11 +2941,11 @@ namespace CherryMP.Networking
 
         internal string GetAnimalGetUpAnimation()
         {
-            var hash = (PedHash)ModelHash;
+            var hash = (PedHash) ModelHash;
 
             if (hash == PedHash.Boar)
                 return "creatures@boar@getup getup_l";
-
+            
 
             return "anim@sports@ballgame@handball@ ball_get_up";
         }
@@ -3012,7 +2980,7 @@ namespace CherryMP.Networking
             lock (Main.NetEntityHandler.ClientMap) Main.NetEntityHandler.HandleMap.Remove(RemoteHandle);
         }
 
-        #endregion
+#endregion
 
     }
 

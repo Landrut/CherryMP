@@ -57,7 +57,7 @@ namespace CherryMPShared
         VERSION_0_7 = 3,
         VERSION_0_8_1 = 4,
         VERSION_0_9 = 5,
-    }
+    }    
 
     public enum FileType
     {
@@ -113,7 +113,7 @@ namespace CherryMPShared
         ExitingVehicle = 1 << 8,
         PlayerDead = 1 << 9,
     }
-
+    
     [Flags]
     public enum PedDataFlags
     {
@@ -153,7 +153,7 @@ namespace CherryMPShared
         UnoccupiedVeh = 11,
     }
 
-
+    
     [ProtoContract]
     public class ConnectionResponse
     {
@@ -291,7 +291,7 @@ namespace CherryMPShared
         [ProtoMember(1)]
         public int NetHandle { get; set; }
     }
-
+    
     [ProtoContract]
     public class CreateEntity
     {
@@ -375,7 +375,7 @@ namespace CherryMPShared
         public bool MediaStream { get; set; }
     }
 
-
+    
 
     [ProtoContract]
     public class PlayerDisconnect

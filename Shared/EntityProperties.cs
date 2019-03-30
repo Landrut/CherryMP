@@ -305,13 +305,13 @@ namespace CherryMPShared
         public Dictionary<int, byte> WeaponTints { get; set; }
 
         [ProtoMember(10)]
-        public Dictionary<int, List<int>> WeaponComponents { get; set; }
+        public Dictionary<int, List<int>> WeaponComponents { get; set; } 
 
         [ProtoMember(11)]
         public string NametagText { get; set; }
 
         [ProtoMember(12)]
-        public int NametagSettings { get; set; }
+        public int NametagSettings { get; set; }   
     }
 
     [ProtoContract]
@@ -319,7 +319,7 @@ namespace CherryMPShared
     {
         public TextLabelProperties()
         {
-            EntityType = (byte)CherryMPShared.EntityType.TextLabel;
+            EntityType = (byte) CherryMPShared.EntityType.TextLabel;
         }
 
         [ProtoMember(1)]
@@ -380,7 +380,7 @@ namespace CherryMPShared
     {
         public ParticleProperties()
         {
-            EntityType = (byte)CherryMPShared.EntityType.Particle;
+            EntityType = (byte) CherryMPShared.EntityType.Particle;
         }
 
         [ProtoMember(1)]

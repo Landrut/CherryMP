@@ -54,7 +54,7 @@ namespace CherryMPServer.Managers
 
                 lock (_ordered)
                 {
-                    var list = Program.ServerInstance.PublicAPI.getAllPlayers().Except(new[] { _parent });
+                    var list = Program.ServerInstance.PublicAPI.getAllPlayers().Except(new [] { _parent });
                     _ordered = new List<Client>(list.OrderBy(c => _parent.Position.DistanceToSquared(c.Position)));
                 }
             }

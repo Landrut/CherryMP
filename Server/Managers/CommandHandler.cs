@@ -219,7 +219,7 @@ namespace CherryMPServer
                     {
                         enumOut = Enum.Parse(Parameters[i].ParameterType, args[i], true);
                     }
-                    catch (ArgumentException)
+                    catch(ArgumentException)
                     {
                         Program.ServerInstance.PublicAPI.sendChatMessageToPlayer(sender, "~r~ERROR: ~w~ No value named \"" + args[i] + "\" has been found for argument \"" + Parameters[i].Name + "\"!");
                         return true;
@@ -228,7 +228,7 @@ namespace CherryMPServer
                     arguments[i] = enumOut;
                     continue;
                 }
-
+                
 
                 if (i == Parameters.Length - 1 && Greedy)
                 {
@@ -317,11 +317,11 @@ namespace CherryMPServer
                             }
                         }
 
-                        var del = Delegate.CreateDelegate(typeof(ArgumentConversionDelegate), eng,
+                        var del = Delegate.CreateDelegate(typeof (ArgumentConversionDelegate), eng,
                             eng.GetType().GetMethod(cmd.ArgumentConverter));
                         parser.CustomArgumentParser = (ArgumentConversionDelegate)del;
                     }
-
+                    
                     if (!string.IsNullOrEmpty(cmd.Alias)) parser.Aliases = cmd.Alias.Split(',').ToArray();
 
                     lock (ResourceCommands) ResourceCommands.Add(parser);

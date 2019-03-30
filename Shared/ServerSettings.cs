@@ -24,7 +24,7 @@ namespace CherryMPShared
 
         [XmlElement("announce")]
         public bool Announce { get; set; }
-
+        
         [XmlElement("upnp")]
         public bool UseUPnP { get; set; }
 
@@ -110,9 +110,9 @@ namespace CherryMPShared
             Resources = new List<SettingsResFilepath>();
             OnFootLagCompensation = true;
             VehicleLagCompensation = true;
-            GlobalStreamingRange = 1000;
-            PlayerStreamingRange = 250;
-            VehicleStreamingRange = 350;
+            GlobalStreamingRange = 500;
+            PlayerStreamingRange = 175;
+            VehicleStreamingRange = 250;
             UseHTTPServer = false;
             RefreshHz = 120;
             LogLevel = 0;

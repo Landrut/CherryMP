@@ -32,7 +32,7 @@ namespace CherryMPServer
         private Queue _mainQueue;
         private Queue _secondaryQueue;
         public bool HasTerminated = false;
-
+        
         public Script GetAssembly
         {
             get
@@ -62,7 +62,7 @@ namespace CherryMPServer
             _blockingThread.IsBackground = true;
             _blockingThread.Start();
         }
-
+        
         private void MainThreadLoop()
         {
             while (!HasTerminated)
@@ -87,16 +87,16 @@ namespace CherryMPServer
                         {
                             if (Async)
                             {
-                                ThreadPool.QueueUserWorkItem((WaitCallback)delegate
+                                ThreadPool.QueueUserWorkItem((WaitCallback) delegate
                                 {
                                     try
                                     {
                                         mainAction?.Invoke();
                                     }
                                     catch (ResourceAbortedException)
-                                    { }
+                                    {}
                                     catch (ThreadAbortException)
-                                    { }
+                                    {}
                                     catch (Exception ex)
                                     {
                                         Program.Output("EXCEPTION IN RESOURCE " + ResourceParent.DirectoryName + " INSIDE SCRIPTENGINE " + Filename);
@@ -160,21 +160,21 @@ namespace CherryMPServer
         public void InvokeVoidMethod(string method, object[] args)
         {
             lock (_mainQueue.SyncRoot)
-                _mainQueue.Enqueue(new Action(() =>
+            _mainQueue.Enqueue(new Action(() =>
+            {
+                if (Language == ScriptingEngineLanguage.compiled)
                 {
-                    if (Language == ScriptingEngineLanguage.compiled)
+                    var mi = _compiledScript.GetType().GetMethod(method);
+                    if (mi == null)
                     {
-                        var mi = _compiledScript.GetType().GetMethod(method);
-                        if (mi == null)
-                        {
-                            Program.Output("METHOD NOT ACCESSIBLE OR NOT FOUND: " + method);
-                            return;
-                        }
-
-                        mi.Invoke(_compiledScript, args == null ? null : args.Length == 0 ? null : args);
+                        Program.Output("METHOD NOT ACCESSIBLE OR NOT FOUND: " + method);
+                        return;
                     }
-                }));
 
+                    mi.Invoke(_compiledScript, args == null ? null : args.Length == 0 ? null : args);
+                }
+          }));
+            
         }
 
         public dynamic InvokeMethod(string method, object[] args)
@@ -184,22 +184,22 @@ namespace CherryMPServer
                 object objectToReturn = null;
                 bool hasValue = false;
                 lock (_mainQueue.SyncRoot)
-                    _mainQueue.Enqueue(new Action(() =>
+                _mainQueue.Enqueue(new Action(() =>
+                {
+                    if (Language == ScriptingEngineLanguage.compiled)
                     {
-                        if (Language == ScriptingEngineLanguage.compiled)
+                        var mi = _compiledScript.GetType().GetMethod(method);
+                        if (mi == null)
                         {
-                            var mi = _compiledScript.GetType().GetMethod(method);
-                            if (mi == null)
-                            {
-                                Program.Output("METHOD NOT ACCESSIBLE OR NOT FOUND: " + method);
-                                hasValue = true;
-                                return;
-                            }
-
-                            objectToReturn = mi.Invoke(_compiledScript, args == null ? null : args.Length == 0 ? null : args);
+                            Program.Output("METHOD NOT ACCESSIBLE OR NOT FOUND: " + method);
                             hasValue = true;
+                            return;
                         }
-                    }));
+                        
+                        objectToReturn = mi.Invoke(_compiledScript, args == null ? null : args.Length == 0 ? null : args);
+                        hasValue = true;
+                    }
+                }));
 
                 while (!hasValue) { }
 
@@ -235,22 +235,22 @@ namespace CherryMPServer
             */
             //*
             lock (_mainQueue.SyncRoot)
-                _mainQueue.Enqueue(new Action(() =>
-                {
-                    if (Language == ScriptingEngineLanguage.compiled)
-                        _compiledScript.API.invokeResourceStart();
-                }));
+            _mainQueue.Enqueue(new Action(() =>
+            {
+                if (Language == ScriptingEngineLanguage.compiled)
+                    _compiledScript.API.invokeResourceStart();
+            }));
             //*/
         }
 
         public void InvokeEntityDataChange(NetHandle ent, string key, object oldValue)
         {
             lock (_mainQueue.SyncRoot)
-                _mainQueue.Enqueue(new Action(() =>
-                {
-                    if (Language == ScriptingEngineLanguage.compiled)
-                        _compiledScript.API.invokeOnEntityDataChange(ent, key, oldValue);
-                }));
+            _mainQueue.Enqueue(new Action(() =>
+            {
+                if (Language == ScriptingEngineLanguage.compiled)
+                    _compiledScript.API.invokeOnEntityDataChange(ent, key, oldValue);
+            }));
         }
 
         public void InvokeResourceStop()
@@ -287,121 +287,121 @@ namespace CherryMPServer
         public void InvokePlayerBeginConnect(Client client, CancelEventArgs e)
         {
             lock (_mainQueue.SyncRoot)
-                _mainQueue.Enqueue(new Action(() =>
-                {
-                    if (Language == ScriptingEngineLanguage.compiled)
-                        _compiledScript.API.invokePlayerBeginConnect(client, e);
-                }));
+            _mainQueue.Enqueue(new Action(() =>
+            {
+                if (Language == ScriptingEngineLanguage.compiled)
+                    _compiledScript.API.invokePlayerBeginConnect(client, e);
+            }));
         }
 
         public void InvokePlayerEnterVehicle(Client client, NetHandle veh)
         {
             lock (_mainQueue.SyncRoot)
-                _mainQueue.Enqueue(new Action(() =>
-                {
-                    if (Language == ScriptingEngineLanguage.compiled)
-                        _compiledScript.API.invokePlayerEnterVeh(client, veh);
-                }));
+            _mainQueue.Enqueue(new Action(() =>
+            {
+                if (Language == ScriptingEngineLanguage.compiled)
+                    _compiledScript.API.invokePlayerEnterVeh(client, veh);
+            }));
         }
 
         public void InvokeServerResourceStart(string resource)
         {
             lock (_mainQueue.SyncRoot)
-                _mainQueue.Enqueue(new Action(() =>
-                {
-                    if (Language == ScriptingEngineLanguage.compiled)
-                        _compiledScript.API.invokeServerResourceStart(resource);
-                }));
+            _mainQueue.Enqueue(new Action(() =>
+            {
+                if (Language == ScriptingEngineLanguage.compiled)
+                    _compiledScript.API.invokeServerResourceStart(resource);
+            }));
         }
 
         public void InvokeVehicleTrailerChange(NetHandle entity, NetHandle trailer)
         {
             lock (_mainQueue.SyncRoot)
-                _mainQueue.Enqueue(new Action(() =>
-                {
-                    if (Language == ScriptingEngineLanguage.compiled)
-                        _compiledScript.API.invokeVehicleTrailerChange(entity, trailer);
-                }));
+            _mainQueue.Enqueue(new Action(() =>
+            {
+                if (Language == ScriptingEngineLanguage.compiled)
+                    _compiledScript.API.invokeVehicleTrailerChange(entity, trailer);
+            }));
         }
 
         public void InvokePlayerDetonateStickies(Client player)
         {
             lock (_mainQueue.SyncRoot)
-                _mainQueue.Enqueue(new Action(() =>
-                {
-                    if (Language == ScriptingEngineLanguage.compiled)
-                        _compiledScript.API.invokePlayerDetonateStickies(player);
-                }));
+            _mainQueue.Enqueue(new Action(() =>
+            {
+                if (Language == ScriptingEngineLanguage.compiled)
+                    _compiledScript.API.invokePlayerDetonateStickies(player);
+            }));
         }
 
         public void InvokePlayerModelChange(Client player, int oldModel)
         {
             lock (_mainQueue.SyncRoot)
-                _mainQueue.Enqueue(new Action(() =>
-                {
-                    if (Language == ScriptingEngineLanguage.compiled)
-                        _compiledScript.API.invokePlayerModelChange(player, oldModel);
-                }));
+            _mainQueue.Enqueue(new Action(() =>
+            {
+                if (Language == ScriptingEngineLanguage.compiled)
+                    _compiledScript.API.invokePlayerModelChange(player, oldModel);
+            }));
         }
 
         public void InvokeVehicleTyreBurst(NetHandle entity, int index)
         {
             lock (_mainQueue.SyncRoot)
-                _mainQueue.Enqueue(new Action(() =>
-                {
-                    if (Language == ScriptingEngineLanguage.compiled)
-                        _compiledScript.API.invokeVehicleTyreBurst(entity, index);
-                }));
+            _mainQueue.Enqueue(new Action(() =>
+            {
+                if (Language == ScriptingEngineLanguage.compiled)
+                    _compiledScript.API.invokeVehicleTyreBurst(entity, index);
+            }));
         }
 
         public void InvokeVehicleDoorBreak(NetHandle entity, int index)
         {
             lock (_mainQueue.SyncRoot)
-                _mainQueue.Enqueue(new Action(() =>
-                {
-                    if (Language == ScriptingEngineLanguage.compiled)
-                        _compiledScript.API.invokeVehicleDoorBreak(entity, index);
-                }));
+            _mainQueue.Enqueue(new Action(() =>
+            {
+                if (Language == ScriptingEngineLanguage.compiled)
+                    _compiledScript.API.invokeVehicleDoorBreak(entity, index);
+            }));
         }
 
         public void InvokeVehicleWindowBreak(NetHandle entity, int index)
         {
             lock (_mainQueue.SyncRoot)
-                _mainQueue.Enqueue(new Action(() =>
-                {
-                    if (Language == ScriptingEngineLanguage.compiled)
-                        _compiledScript.API.invokeVehicleWindowBreak(entity, index);
-                }));
+            _mainQueue.Enqueue(new Action(() =>
+            {
+                if (Language == ScriptingEngineLanguage.compiled)
+                    _compiledScript.API.invokeVehicleWindowBreak(entity, index);
+            }));
         }
 
         public void InvokeVehicleSirenToggle(NetHandle entity, bool oldValue)
         {
             lock (_mainQueue.SyncRoot)
-                _mainQueue.Enqueue(new Action(() =>
-                {
-                    if (Language == ScriptingEngineLanguage.compiled)
-                        _compiledScript.API.invokeVehicleSirenToggle(entity, oldValue);
-                }));
+            _mainQueue.Enqueue(new Action(() =>
+            {
+                if (Language == ScriptingEngineLanguage.compiled)
+                    _compiledScript.API.invokeVehicleSirenToggle(entity, oldValue);
+            }));
         }
 
         public void InvokeVehicleHealthChange(NetHandle player, float oldValue)
         {
             lock (_mainQueue.SyncRoot)
-                _mainQueue.Enqueue(new Action(() =>
-                {
-                    if (Language == ScriptingEngineLanguage.compiled)
-                        _compiledScript.API.invokeVehicleHealthChange(player, oldValue);
-                }));
+            _mainQueue.Enqueue(new Action(() =>
+            {
+                if (Language == ScriptingEngineLanguage.compiled)
+                    _compiledScript.API.invokeVehicleHealthChange(player, oldValue);
+            }));
         }
 
         public void InvokePlayerWeaponChange(Client player, int oldValue)
         {
             lock (_mainQueue.SyncRoot)
-                _mainQueue.Enqueue(new Action(() =>
-                {
-                    if (Language == ScriptingEngineLanguage.compiled)
-                        _compiledScript.API.invokePlayerWeaponSwitch(player, oldValue);
-                }));
+            _mainQueue.Enqueue(new Action(() =>
+            {
+                if (Language == ScriptingEngineLanguage.compiled)
+                    _compiledScript.API.invokePlayerWeaponSwitch(player, oldValue);
+            }));
         }
 
         public void InvokePlayerWeaponAmmoChange(Client player, int weapon, int oldValue)
@@ -417,91 +417,91 @@ namespace CherryMPServer
         public void InvokePlayerArmorChange(Client player, int oldValue)
         {
             lock (_mainQueue.SyncRoot)
-                _mainQueue.Enqueue(new Action(() =>
-                {
-                    if (Language == ScriptingEngineLanguage.compiled)
-                        _compiledScript.API.invokePlayerArmorChange(player, oldValue);
-                }));
+            _mainQueue.Enqueue(new Action(() =>
+            {
+                if (Language == ScriptingEngineLanguage.compiled)
+                    _compiledScript.API.invokePlayerArmorChange(player, oldValue);
+            }));
         }
 
         public void InvokePlayerHealthChange(Client player, int oldValue)
         {
             lock (_mainQueue.SyncRoot)
-                _mainQueue.Enqueue(new Action(() =>
-                {
-                    if (Language == ScriptingEngineLanguage.compiled)
-                        _compiledScript.API.invokePlayerHealthChange(player, oldValue);
-                }));
+            _mainQueue.Enqueue(new Action(() =>
+            {
+                if (Language == ScriptingEngineLanguage.compiled)
+                    _compiledScript.API.invokePlayerHealthChange(player, oldValue);
+            }));
         }
 
         public void InvokeServerResourceStop(string resource)
         {
             lock (_mainQueue.SyncRoot)
-                _mainQueue.Enqueue(new Action(() =>
-                {
-                    if (Language == ScriptingEngineLanguage.compiled)
-                        _compiledScript.API.invokeServerResourceStop(resource);
-                }));
+            _mainQueue.Enqueue(new Action(() =>
+            {
+                if (Language == ScriptingEngineLanguage.compiled)
+                    _compiledScript.API.invokeServerResourceStop(resource);
+            }));
         }
 
         public void InvokeCustomDataReceive(string resource)
         {
             lock (_mainQueue.SyncRoot)
-                _mainQueue.Enqueue(new Action(() =>
-                {
-                    if (Language == ScriptingEngineLanguage.compiled)
-                        _compiledScript.API.invokeCustomDataReceive(resource);
-                }));
+            _mainQueue.Enqueue(new Action(() =>
+            {
+                if (Language == ScriptingEngineLanguage.compiled)
+                    _compiledScript.API.invokeCustomDataReceive(resource);
+            }));
         }
 
         public void InvokePlayerExitVehicle(Client client, NetHandle veh)
         {
             lock (_mainQueue.SyncRoot)
-                _mainQueue.Enqueue(new Action(() =>
-                {
-                    if (Language == ScriptingEngineLanguage.compiled)
-                        _compiledScript.API.invokePlayerExitVeh(client, veh);
-                }));
+            _mainQueue.Enqueue(new Action(() =>
+            {
+                if (Language == ScriptingEngineLanguage.compiled)
+                    _compiledScript.API.invokePlayerExitVeh(client, veh);
+            }));
         }
 
         public void InvokeVehicleDeath(NetHandle veh)
         {
             lock (_mainQueue.SyncRoot)
-                _mainQueue.Enqueue(new Action(() =>
-                {
-                    if (Language == ScriptingEngineLanguage.compiled)
-                        _compiledScript.API.invokeVehicleDeath(veh);
-                }));
+            _mainQueue.Enqueue(new Action(() =>
+            {
+                if (Language == ScriptingEngineLanguage.compiled)
+                    _compiledScript.API.invokeVehicleDeath(veh);
+            }));
         }
 
         public void InvokeColshapeEnter(ColShape shape, NetHandle veh)
         {
             lock (_mainQueue.SyncRoot)
-                _mainQueue.Enqueue(new Action(() =>
-                {
-                    if (Language == ScriptingEngineLanguage.compiled)
-                        _compiledScript.API.invokeColShapeEnter(shape, veh);
-                }));
+            _mainQueue.Enqueue(new Action(() =>
+            {
+                if (Language == ScriptingEngineLanguage.compiled)
+                    _compiledScript.API.invokeColShapeEnter(shape, veh);
+            }));
         }
 
         public void InvokeColshapeExit(ColShape shape, NetHandle veh)
         {
             lock (_mainQueue.SyncRoot)
-                _mainQueue.Enqueue(new Action(() =>
-                {
-                    if (Language == ScriptingEngineLanguage.compiled)
-                        _compiledScript.API.invokeColShapeExit(shape, veh);
-                }));
+            _mainQueue.Enqueue(new Action(() =>
+            {
+                if (Language == ScriptingEngineLanguage.compiled)
+                    _compiledScript.API.invokeColShapeExit(shape, veh);
+            }));
         }
 
         public void InvokeMapChange(string mapName, XmlGroup map)
         {
             lock (_mainQueue.SyncRoot)
-                _mainQueue.Enqueue(new Action(() =>
-                {
-                    if (Language == ScriptingEngineLanguage.compiled)
-                        _compiledScript.API.invokeMapChange(mapName, map);
-                }));
+            _mainQueue.Enqueue(new Action(() =>
+            {
+                if (Language == ScriptingEngineLanguage.compiled)
+                    _compiledScript.API.invokeMapChange(mapName, map);
+            }));
         }
 
         public void InvokePlayerDisconnected(Client client, string reason)
@@ -527,31 +527,31 @@ namespace CherryMPServer
         public void InvokePlayerDownloadFinished(Client client)
         {
             lock (_mainQueue.SyncRoot)
-                _mainQueue.Enqueue(new Action(() =>
-                {
-                    if (Language == ScriptingEngineLanguage.compiled)
-                        _compiledScript.API.invokeFinishedDownload(client);
-                }));
+            _mainQueue.Enqueue(new Action(() =>
+            {
+                if (Language == ScriptingEngineLanguage.compiled)
+                    _compiledScript.API.invokeFinishedDownload(client);
+            }));
         }
 
         public void InvokePlayerPickup(Client client, NetHandle pickup)
         {
             lock (_mainQueue.SyncRoot)
-                _mainQueue.Enqueue(new Action(() =>
-                {
-                    if (Language == ScriptingEngineLanguage.compiled)
-                        _compiledScript.API.invokePlayerPickup(client, pickup);
-                }));
+            _mainQueue.Enqueue(new Action(() =>
+            {
+                if (Language == ScriptingEngineLanguage.compiled)
+                    _compiledScript.API.invokePlayerPickup(client, pickup);
+            }));
         }
 
         public void InvokePickupRespawn(NetHandle pickup)
         {
             lock (_mainQueue.SyncRoot)
-                _mainQueue.Enqueue(new Action(() =>
-                {
-                    if (Language == ScriptingEngineLanguage.compiled)
-                        _compiledScript.API.invokePickupRespawn(pickup);
-                }));
+            _mainQueue.Enqueue(new Action(() =>
+            {
+                if (Language == ScriptingEngineLanguage.compiled)
+                    _compiledScript.API.invokePickupRespawn(pickup);
+            }));
         }
 
         public void InvokeChatCommand(Client sender, string command, CancelEventArgs ce)
@@ -593,41 +593,41 @@ namespace CherryMPServer
         public void InvokeClientEvent(Client sender, string eventName, object[] args)
         {
             lock (_mainQueue.SyncRoot)
-                _mainQueue.Enqueue(new Action(() =>
-                {
-                    if (Language == ScriptingEngineLanguage.compiled)
-                        _compiledScript.API.invokeClientEvent(sender, eventName, args);
-                }));
+            _mainQueue.Enqueue(new Action(() =>
+            {
+                if (Language == ScriptingEngineLanguage.compiled)
+                    _compiledScript.API.invokeClientEvent(sender, eventName, args);
+            }));
         }
 
         public void InvokePlayerConnected(Client sender)
         {
             lock (_mainQueue.SyncRoot)
-                _mainQueue.Enqueue(new Action(() =>
-                {
-                    if (Language == ScriptingEngineLanguage.compiled)
-                        _compiledScript.API.invokePlayerConnected(sender);
-                }));
+            _mainQueue.Enqueue(new Action(() =>
+            {
+                if (Language == ScriptingEngineLanguage.compiled)
+                    _compiledScript.API.invokePlayerConnected(sender);
+            }));
         }
 
         public void InvokePlayerDeath(Client killed, int reason, int weapon)
         {
             lock (_mainQueue.SyncRoot)
-                _mainQueue.Enqueue(new Action(() =>
-                {
-                    if (Language == ScriptingEngineLanguage.compiled)
-                        _compiledScript.API.invokePlayerDeath(killed, new NetHandle(reason), weapon);
-                }));
+            _mainQueue.Enqueue(new Action(() =>
+            {
+                if (Language == ScriptingEngineLanguage.compiled)
+                    _compiledScript.API.invokePlayerDeath(killed, new NetHandle(reason), weapon);
+            }));
         }
 
         public void InvokePlayerRespawn(Client sender)
         {
             lock (_mainQueue.SyncRoot)
-                _mainQueue.Enqueue(new Action(() =>
-                {
-                    if (Language == ScriptingEngineLanguage.compiled)
-                        _compiledScript.API.invokePlayerRespawn(sender);
-                }));
+            _mainQueue.Enqueue(new Action(() =>
+            {
+                if (Language == ScriptingEngineLanguage.compiled)
+                    _compiledScript.API.invokePlayerRespawn(sender);
+            }));
         }
 
         public void InvokeUpdate()

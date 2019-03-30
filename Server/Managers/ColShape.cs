@@ -103,7 +103,7 @@ namespace CherryMPServer
             }
             set
             {
-                _rangeSquared = value * value;
+                _rangeSquared = value*value;
                 _range = value;
             }
         }
@@ -271,7 +271,7 @@ namespace CherryMPServer
 
         public void Remove(ColShape shape)
         {
-            lock (ColShapes) ColShapes.Remove(shape);
+            lock(ColShapes) ColShapes.Remove(shape);
         }
 
         public void MainLoop()
@@ -282,7 +282,7 @@ namespace CherryMPServer
                 {
                     Dictionary<int, EntityProperties> entities = Program.ServerInstance.NetEntityHandler.ToCopy();
 
-                    var entList = entities.Where(pair => _validTypes.Contains((EntityType)pair.Value.EntityType));
+                    var entList = entities.Where(pair => _validTypes.Contains((EntityType) pair.Value.EntityType));
 
                     List<ColShape> localShapes;
                     lock (ColShapes)
@@ -301,10 +301,10 @@ namespace CherryMPServer
                                     NetHandle ent = new NetHandle(entity.Key);
 
                                     lock (Program.ServerInstance.RunningResources)
-                                        Program.ServerInstance.RunningResources.ForEach(fs => fs.Engines.ForEach(en =>
-                                        {
-                                            en.InvokeColshapeEnter(shape, ent);
-                                        }));
+                                            Program.ServerInstance.RunningResources.ForEach(fs => fs.Engines.ForEach(en =>
+                                            {
+                                                en.InvokeColshapeEnter(shape, ent);
+                                            }));
 
                                     shape.InvokeEnterColshape(ent);
 
@@ -318,10 +318,10 @@ namespace CherryMPServer
                                     NetHandle ent = new NetHandle(entity.Key);
 
                                     lock (Program.ServerInstance.RunningResources)
-                                        Program.ServerInstance.RunningResources.ForEach(fs => fs.Engines.ForEach(en =>
-                                        {
-                                            en.InvokeColshapeExit(shape, ent);
-                                        }));
+                                            Program.ServerInstance.RunningResources.ForEach(fs => fs.Engines.ForEach(en =>
+                                            {
+                                                en.InvokeColshapeExit(shape, ent);
+                                            }));
 
                                     shape.InvokeExitColshape(ent);
 

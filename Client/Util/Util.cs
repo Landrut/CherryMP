@@ -9,6 +9,7 @@ using GTA.Native;
 using CherryMPShared;
 using Quaternion = GTA.Math.Quaternion;
 using Vector3 = GTA.Math.Vector3;
+using GTA.Math;
 
 namespace CherryMP.Util
 {
@@ -322,6 +323,11 @@ namespace CherryMP.Util
         public static Vector3 Denormalize(this Vector3 v)
         {
             return new Vector3(v.X.Denormalize(), v.Y.Denormalize(), v.Z.Denormalize());
+        }
+
+        public static dynamic Lerp(dynamic from, dynamic to, float fAlpha)
+        {
+            return ((to - from) * fAlpha + from);
         }
 
         public static float ToRadians(this float val)

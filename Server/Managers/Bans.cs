@@ -31,7 +31,7 @@ namespace CherryMPServer.Managers
             {
                 var ser = new XmlSerializer(typeof(BanCollection));
                 using (var stream = File.OpenRead("bans.xml"))
-                    _banCollection = (BanCollection)ser.Deserialize(stream);
+                    _banCollection = (BanCollection) ser.Deserialize(stream);
 
                 if (_banCollection.Bans == null) _banCollection.Bans = new List<BanItem>();
             }

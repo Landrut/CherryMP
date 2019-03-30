@@ -86,7 +86,7 @@ namespace CherryMPServer
         {
             if (!_XmlElement.HasAttribute(elementName)) return default(T);
             var attribute = _XmlElement.GetAttribute(elementName);
-            return (T)Convert.ChangeType(attribute, typeof(T), CultureInfo.InvariantCulture);
+            return (T) Convert.ChangeType(attribute, typeof (T), CultureInfo.InvariantCulture);
         }
     }
 }

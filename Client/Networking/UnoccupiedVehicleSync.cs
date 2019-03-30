@@ -61,7 +61,10 @@ namespace CherryMP.Networking
 
         internal bool IsSyncing(RemoteVehicle veh)
         {
-            return SyncedVehicles.Contains(veh);
+            lock (SyncedVehicles)
+            {
+                return SyncedVehicles.Contains(veh);
+            }
         }
 
         internal void StopSyncing(int vehicle)
@@ -99,89 +102,80 @@ namespace CherryMP.Networking
 
                 if (SyncedVehicles.Count > 0)
                 {
-                    int vehicleCount = 0;
-                    List<byte> buffer = new List<byte>();
+                    var vehicleCount = 0;
+                    var buffer = new List<byte>();
 
                     lock (SyncedVehicles)
                     {
-                        foreach (var vehicle in SyncedVehicles.Where(v => v.StreamedIn))
+                        foreach (var vehicle in SyncedVehicles)
                         {
                             var ent = Main.NetEntityHandler.NetToEntity(vehicle);
 
-                            if (ent == null) continue;
+                            if (ent == null || !vehicle.StreamedIn) continue;
 
-                            float dist = 0f;
-
-                            if (ent.Model.IsBoat)
-                            {
-                                dist = ent.Position.DistanceToSquared2D(vehicle.Position.ToVector());
-                            }
-                            else
-                            {
-                                dist = ent.Position.DistanceToSquared(vehicle.Position.ToVector());
-                            }
+                            var dist = ent.Model.IsBoat ? ent.Position.DistanceToSquared2D(vehicle.Position.ToVector()) : ent.Position.DistanceToSquared(vehicle.Position.ToVector());
 
                             var veh = new Vehicle(ent.Handle);
 
                             byte BrokenDoors = 0;
                             byte BrokenWindows = 0;
 
-                            for (int i = 0; i < 8; i++)
+                            for (var i = 0; i < 8; i++)
                             {
                                 if (veh.Doors[(VehicleDoorIndex)i].IsBroken) BrokenDoors |= (byte)(1 << i);
                                 if (!veh.Windows[(VehicleWindowIndex)i].IsIntact) BrokenWindows |= (byte)(1 << i);
                             }
 
-                            bool syncUnocVeh = false;
-                            syncUnocVeh = (dist) > 2f ||
-                                          ent.Rotation.DistanceToSquared(vehicle.Rotation.ToVector()) > 2f ||
-                                          (ent.Velocity.LengthSquared() == 0 && vehicle.Velocity.LengthSquared() > 0) ||
-                                          Math.Abs(ent.Velocity.LengthSquared() - vehicle.Velocity.LengthSquared()) > 2f ||
+                            var syncUnocVeh = dist > 2f || ent.Rotation.DistanceToSquared(vehicle.Rotation.ToVector()) > 2f ||
                                           Math.Abs(new Vehicle(ent.Handle).EngineHealth - vehicle.Health) > 1f ||
                                           Util.Util.BuildTyreFlag(new Vehicle(ent.Handle)) != vehicle.Tires ||
                                           vehicle.DamageModel == null ||
                                           vehicle.DamageModel.BrokenWindows != BrokenWindows ||
                                           vehicle.DamageModel.BrokenDoors != BrokenDoors;
 
-                            if (syncUnocVeh)
+                            if (!syncUnocVeh) continue;
                             {
                                 vehicle.Position = ent.Position.ToLVector();
                                 vehicle.Rotation = ent.Rotation.ToLVector();
-                                vehicle.Velocity = ent.Velocity.ToLVector();
                                 vehicle.Health = veh.EngineHealth;
                                 vehicle.Tires = (byte)Util.Util.BuildTyreFlag(veh);
+
                                 if (vehicle.DamageModel == null) vehicle.DamageModel = new VehicleDamageModel();
+
                                 vehicle.DamageModel.BrokenWindows = BrokenWindows;
                                 vehicle.DamageModel.BrokenDoors = BrokenDoors;
 
-                                var data = new VehicleData();
-                                data.VehicleHandle = vehicle.RemoteHandle;
-                                data.Position = vehicle.Position;
-                                data.Quaternion = vehicle.Rotation;
-                                data.Velocity = ent.Velocity.ToLVector();
-                                data.VehicleHealth = vehicle.Health;
-                                data.DamageModel = new VehicleDamageModel()
+                                var data = new VehicleData
                                 {
-                                    BrokenWindows = BrokenWindows,
-                                    BrokenDoors = BrokenDoors,
+                                    VehicleHandle = vehicle.RemoteHandle,
+                                    Position = vehicle.Position,
+                                    Quaternion = vehicle.Rotation,
+                                    Velocity = ent.Velocity.ToLVector(),
+                                    VehicleHealth = vehicle.Health,
+                                    DamageModel = new VehicleDamageModel()
+                                    {
+                                        BrokenWindows = BrokenWindows,
+                                        BrokenDoors = BrokenDoors,
+                                    }
                                 };
+
                                 if (ent.IsDead)
-                                    data.Flag = (short) VehicleDataFlags.VehicleDead;
+                                {
+                                    data.Flag = (short)VehicleDataFlags.VehicleDead;
+                                }
                                 else
+                                {
                                     data.Flag = 0;
+                                }
 
                                 byte tyreFlag = 0;
 
-                                for (int i = 0; i < 8; i++)
-                                {
-                                    if (veh.IsTireBurst(i))
-                                        tyreFlag |= (byte)(1 << i);
-                                }
+                                for (int i = 0; i < 8; i++) if (veh.IsTireBurst(i)) tyreFlag |= (byte)(1 << i);
 
                                 data.PlayerHealth = tyreFlag;
 
                                 var bin = PacketOptimization.WriteUnOccupiedVehicleSync(data);
-                                
+
                                 buffer.AddRange(bin);
                                 vehicleCount++;
                             }
@@ -197,7 +191,7 @@ namespace CherryMP.Networking
                         msg.Write(buffer.Count);
                         msg.Write(buffer.ToArray());
 
-                        Main.Client.SendMessage(msg, NetDeliveryMethod.UnreliableSequenced, (int) ConnectionChannel.UnoccupiedVeh);
+                        Main.Client.SendMessage(msg, NetDeliveryMethod.Unreliable, (int)ConnectionChannel.UnoccupiedVeh);
 
                         Main._bytesSent += buffer.Count;
                         Main._messagesSent++;
@@ -205,14 +199,13 @@ namespace CherryMP.Networking
                 }
             }
 
-            for (int i = Interpolations.Count - 1; i >= 0; i--)
+            for (int i = 0; i < Interpolations.Count; i++)
             {
                 var pair = Interpolations.ElementAt(i);
 
                 pair.Value.Pulse();
 
-                if (pair.Value.HasFinished)
-                    Interpolations.Remove(pair.Key);
+                if (pair.Value.HasFinished) Interpolations.Remove(pair.Key);
             }
         }
     }
@@ -273,7 +266,7 @@ namespace CherryMP.Networking
 
                 alpha = Util.Util.Clamp(0f, alpha, 1.5f);
 
-                Vector3 comp = Util.Util.Lerp(new Vector3(), alpha, NetInterpolation.vecError);
+                Vector3 comp = Util.Util.Lerp(new Vector3(), NetInterpolation.vecError, alpha);
 
                 if (alpha == 1.5f)
                 {
@@ -282,11 +275,9 @@ namespace CherryMP.Networking
                 }
 
                 var newPos = _startPos + comp;
-                _entity.Velocity = _velocity.ToVector() + 3*(newPos - _entity.Position);
+                _entity.Velocity = _velocity.ToVector() + 3 * (newPos - _entity.Position);
 
-                _entity.Quaternion = GTA.Math.Quaternion.Slerp(_startRot.ToQuaternion(),
-                    _rotation.ToQuaternion(),
-                    Math.Min(1.5f, alpha));
+                _entity.Quaternion = GTA.Math.Quaternion.Slerp(_startRot.ToQuaternion(), _rotation.ToQuaternion(), Math.Min(1.5f, alpha));
             }
         }
     }

@@ -106,13 +106,13 @@ namespace CherryMPServer
             config.EnableMessageType(NetIncomingMessageType.ConnectionLatencyUpdated);
             config.MaxPlayers = MaxPlayers;
             config.ConnectionTimeout = 120f; // 30 second timeout
-                                             //config.MaximumConnections = conf.MaxPlayers + 2; // + 2 for discoveries
+            //config.MaximumConnections = conf.MaxPlayers + 2; // + 2 for discoveries
+   
 
-
-
+            
 
             Server = new NetServer(config);
-
+            
             PasswordProtected = !string.IsNullOrWhiteSpace(conf.Password);
             Password = conf.Password;
             AnnounceSelf = conf.Announce;
@@ -200,7 +200,7 @@ namespace CherryMPServer
         public FileServer FileServer;
 
         private Dictionary<string, string> FileHashes { get; set; }
-        public Dictionary<NetHandle, Dictionary<string, object>> EntityProperties =
+        public Dictionary<NetHandle, Dictionary<string, object>> EntityProperties = 
             new Dictionary<NetHandle, Dictionary<string, object>>();
         public Dictionary<string, object> WorldProperties = new Dictionary<string, object>();
 
@@ -248,7 +248,7 @@ namespace CherryMPServer
             {
                 try
                 {
-                    Server.UPnP.ForwardPort(Port, "GTA Network Server");
+                    Server.UPnP.ForwardPort(Port, "Cherry Multiplayer Server");
                 }
                 catch (Exception ex)
                 {
@@ -289,7 +289,7 @@ namespace CherryMPServer
             if (LogLevel > 0)
                 Program.Output("Announcing self to master server...", LogCat.Debug);
 
-            var annThread = new Thread((ThreadStart)delegate
+            var annThread = new Thread((ThreadStart) delegate
             {
                 using (var wb = new WebClient())
                 {
@@ -303,7 +303,7 @@ namespace CherryMPServer
                         annObject.Map = CurrentMap?.DirectoryName;
                         annObject.Gamemode = string.IsNullOrEmpty(GamemodeName)
                                         ? Gamemode?
-                                            .DirectoryName ?? "GTA Network"
+                                            .DirectoryName ?? "Cherry Multiplayer"
                                         : GamemodeName;
                         annObject.Port = Port;
                         annObject.Passworded = PasswordProtected;
@@ -397,15 +397,15 @@ namespace CherryMPServer
             var dict = new Dictionary<string, CustomSetting>();
 
             if (sets != null)
-                foreach (var setting in sets)
+            foreach (var setting in sets)
+            {
+                dict.Set(setting.Name, new CustomSetting()
                 {
-                    dict.Set(setting.Name, new CustomSetting()
-                    {
-                        Value = setting.Value,
-                        DefaultValue = setting.DefaultValue,
-                        Description = setting.Description,
-                    });
-                }
+                    Value = setting.Value,
+                    DefaultValue = setting.DefaultValue,
+                    Description = setting.Description,
+                });
+            }
 
             return dict;
         }
@@ -423,14 +423,14 @@ namespace CherryMPServer
 
                 var baseDir = "resources" + Path.DirectorySeparatorChar + resourceName + Path.DirectorySeparatorChar;
 
-                if (!File.Exists(baseDir + "meta.xml"))
+                if (!File.Exists(baseDir + "meta.xml")) 
                     throw new FileNotFoundException("meta.xml has not been found.");
 
                 var xmlSer = new XmlSerializer(typeof(ResourceInfo));
                 ResourceInfo currentResInfo;
                 using (var str = File.OpenRead(baseDir + "meta.xml"))
                     currentResInfo = (ResourceInfo)xmlSer.Deserialize(str);
-
+                
                 var ourResource = new Resource();
                 ourResource.Info = currentResInfo;
                 ourResource.DirectoryName = resourceName;
@@ -449,7 +449,7 @@ namespace CherryMPServer
                     var aclHead = AccessControlList.ParseXml("resources" + Path.DirectorySeparatorChar + resourceName + Path.DirectorySeparatorChar + currentResInfo.ResourceACL.Path);
                     ACL.MergeACL(aclHead);
                 }
-
+                
                 if (currentResInfo.Includes != null)
                     foreach (var resource in currentResInfo.Includes)
                     {
@@ -480,25 +480,25 @@ namespace CherryMPServer
                 }
 
                 if (currentResInfo.ConfigFiles != null)
-                    foreach (var filePath in currentResInfo.ConfigFiles.Where(cfg => cfg.Type == ScriptType.client))
+                foreach (var filePath in currentResInfo.ConfigFiles.Where(cfg => cfg.Type == ScriptType.client))
+                {
+                    using (var md5 = MD5.Create())
+                    using (var stream = File.OpenRead("resources" + Path.DirectorySeparatorChar + resourceName + Path.DirectorySeparatorChar + filePath.Path))
                     {
-                        using (var md5 = MD5.Create())
-                        using (var stream = File.OpenRead("resources" + Path.DirectorySeparatorChar + resourceName + Path.DirectorySeparatorChar + filePath.Path))
-                        {
-                            var myData = md5.ComputeHash(stream);
+                        var myData = md5.ComputeHash(stream);
 
-                            var keyName = ourResource.DirectoryName + "_" + filePath.Path;
+                        var keyName = ourResource.DirectoryName + "_" + filePath.Path;
 
-                            string hash = myData.Select(byt => byt.ToString("x2")).Aggregate((left, right) => left + right);
+                        string hash = myData.Select(byt => byt.ToString("x2")).Aggregate((left, right) => left + right);
 
-                            if (FileHashes.ContainsKey(keyName))
-                                FileHashes[keyName] = hash;
-                            else
-                                FileHashes.Add(keyName, hash);
+                        if (FileHashes.ContainsKey(keyName))
+                            FileHashes[keyName] = hash;
+                        else
+                            FileHashes.Add(keyName, hash);
 
-                            FileModule.ExportedFiles[resourceName].Add(new FileDeclaration(filePath.Path, hash, FileType.Normal));
-                        }
+                        FileModule.ExportedFiles[resourceName].Add(new FileDeclaration(filePath.Path, hash, FileType.Normal));
                     }
+                }
 
                 if (currentResInfo.settings != null)
                 {
@@ -529,7 +529,7 @@ namespace CherryMPServer
                         AssemblyReferences.Set(ass.Name,
                             "resources" + Path.DirectorySeparatorChar + resourceName + Path.DirectorySeparatorChar + ass.Name);
                     }
-
+                
 
                 var csScripts = new List<ClientsideScript>();
 
@@ -559,9 +559,9 @@ namespace CherryMPServer
                             };
 
                             string hash;
-
+                            
                             using (var md5 = MD5.Create())
-                            {
+                            { 
                                 var myData = md5.ComputeHash(Encoding.UTF8.GetBytes(scrTxt));
                                 hash = myData.Select(byt => byt.ToString("x2")).Aggregate((left, right) => left + right);
                                 csScript.MD5Hash = hash;
@@ -631,67 +631,67 @@ namespace CherryMPServer
                 }
 
                 CommandHandler.Register(ourResource);
-
+                
                 var randGen = new Random();
-
+                
                 if (ourResource.ClientsideScripts.Count > 0 || currentResInfo.Files.Count > 0)
-                    foreach (var client in Clients)
+                foreach (var client in Clients)
+                {
+                    var downloader = new StreamingClient(client);
+
+                    if (!UseHTTPFileServer)
                     {
-                        var downloader = new StreamingClient(client);
-
-                        if (!UseHTTPFileServer)
+                        foreach (var file in currentResInfo.Files)
                         {
-                            foreach (var file in currentResInfo.Files)
-                            {
-                                var fileData = new StreamedData();
-                                fileData.Id = randGen.Next(int.MaxValue);
-                                fileData.Type = FileType.Normal;
-                                fileData.Data =
-                                    File.ReadAllBytes("resources" + Path.DirectorySeparatorChar +
-                                                      ourResource.DirectoryName +
-                                                      Path.DirectorySeparatorChar +
-                                                      file.Path);
-                                fileData.Name = file.Path;
-                                fileData.Resource = ourResource.DirectoryName;
-                                fileData.Hash = FileHashes.ContainsKey(ourResource.DirectoryName + "_" + file.Path)
-                                    ? FileHashes[ourResource.DirectoryName + "_" + file.Path]
-                                    : null;
+                            var fileData = new StreamedData();
+                            fileData.Id = randGen.Next(int.MaxValue);
+                            fileData.Type = FileType.Normal;
+                            fileData.Data =
+                                File.ReadAllBytes("resources" + Path.DirectorySeparatorChar +
+                                                  ourResource.DirectoryName +
+                                                  Path.DirectorySeparatorChar +
+                                                  file.Path);
+                            fileData.Name = file.Path;
+                            fileData.Resource = ourResource.DirectoryName;
+                            fileData.Hash = FileHashes.ContainsKey(ourResource.DirectoryName + "_" + file.Path)
+                                ? FileHashes[ourResource.DirectoryName + "_" + file.Path]
+                                : null;
 
-                                downloader.Files.Add(fileData);
-                            }
+                            downloader.Files.Add(fileData);
                         }
-                        else
-                        {
-                            var msg = Server.CreateMessage();
-                            msg.Write((byte)PacketType.RedownloadManifest);
-                            client.NetConnection.SendMessage(msg, NetDeliveryMethod.ReliableOrdered, (int)ConnectionChannel.FileTransfer);
-                        }
-
-                        foreach (var script in ourResource.ClientsideScripts)
-                        {
-                            var scriptData = new StreamedData();
-                            scriptData.Id = randGen.Next(int.MaxValue);
-                            scriptData.Data = Encoding.UTF8.GetBytes(script.Script);
-                            scriptData.Type = FileType.Script;
-                            scriptData.Resource = script.ResourceParent;
-                            scriptData.Hash = script.MD5Hash;
-                            scriptData.Name = script.Filename;
-                            downloader.Files.Add(scriptData);
-                        }
-
-                        var endStream = new StreamedData();
-                        endStream.Id = randGen.Next(int.MaxValue);
-                        endStream.Data = new byte[] { 0xDE, 0xAD, 0xF0, 0x0D };
-                        endStream.Type = FileType.EndOfTransfer;
-                        downloader.Files.Add(endStream);
-
-                        Downloads.Add(downloader);
                     }
+                    else
+                    {
+                        var msg = Server.CreateMessage();
+                        msg.Write((byte)PacketType.RedownloadManifest);
+                        client.NetConnection.SendMessage(msg, NetDeliveryMethod.ReliableOrdered, (int)ConnectionChannel.FileTransfer);
+                    }
+
+                    foreach (var script in ourResource.ClientsideScripts)
+                    {
+                        var scriptData = new StreamedData();
+                        scriptData.Id = randGen.Next(int.MaxValue);
+                        scriptData.Data = Encoding.UTF8.GetBytes(script.Script);
+                        scriptData.Type = FileType.Script;
+                        scriptData.Resource = script.ResourceParent;
+                        scriptData.Hash = script.MD5Hash;
+                        scriptData.Name = script.Filename;
+                        downloader.Files.Add(scriptData);
+                    }
+
+                    var endStream = new StreamedData();
+                    endStream.Id = randGen.Next(int.MaxValue);
+                    endStream.Data = new byte[] { 0xDE, 0xAD, 0xF0, 0x0D };
+                    endStream.Type = FileType.EndOfTransfer;
+                    downloader.Files.Add(endStream);
+
+                    Downloads.Add(downloader);
+                }
 
                 if (ourResource.Info.Map != null && !string.IsNullOrWhiteSpace(ourResource.Info.Map.Path))
                 {
                     ourResource.Map = new XmlGroup();
-                    ourResource.Map.Load("resources\\" + ourResource.DirectoryName + "\\" + ourResource.Info.Map.Path);
+                    ourResource.Map.Load("resources\\" + ourResource.DirectoryName +"\\" + ourResource.Info.Map.Path);
 
                     LoadMap(ourResource, ourResource.Map, ourResource.Info.Map.Dimension);
 
@@ -703,9 +703,9 @@ namespace CherryMPServer
                     else if (ourResource.Info.Info.Type == ResourceType.map)
                     {
                         if (string.IsNullOrWhiteSpace(ourResource.Info.Info.Gamemodes))
-                        { }
+                        {}
                         else if (ourResource.Info.Info.Gamemodes?.Split(',').Length != 1 && Gamemode == null)
-                        { }
+                        {}
                         else if (ourResource.Info.Info.Gamemodes?.Split(',').Length == 1 && (Gamemode == null || !ourResource.Info.Info.Gamemodes.Split(',').Contains(Gamemode.DirectoryName)))
                         {
                             if (CurrentMap != null) StopResource(CurrentMap.DirectoryName);
@@ -768,7 +768,7 @@ namespace CherryMPServer
                                 resPoolDict.Add(func.EventName, null);
 
                                 ExportedEvent punchthrough = new ExportedEvent((ExportedEvent)
-                                    delegate (dynamic[] parameters)
+                                    delegate(dynamic[] parameters)
                                     {
                                         ExportedEvent e = resPoolDict[func.EventName] as ExportedEvent;
 
@@ -785,7 +785,7 @@ namespace CherryMPServer
 
                     gPool.Add(ourResource.DirectoryName, resPool);
                 }
-
+                
                 foreach (var engine in ourResource.Engines)
                 {
                     engine.InvokeResourceStart();
@@ -819,14 +819,14 @@ namespace CherryMPServer
                 if (ourRes == null) return false;
 
                 Program.Output("Stopping " + resourceName);
-
+                
                 RunningResources.Remove(ourRes);
             }
 
             ourRes.Engines.ForEach(en => en.InvokeResourceStop());
 
             var msg = Server.CreateMessage();
-            msg.Write((byte)PacketType.StopResource);
+            msg.Write((byte) PacketType.StopResource);
             msg.Write(resourceName);
             Server.SendToAll(msg, NetDeliveryMethod.ReliableOrdered);
 
@@ -837,15 +837,15 @@ namespace CherryMPServer
                     StopResource(CurrentMap.DirectoryName);
                     CurrentMap = null;
                 }
-
+                    
                 Gamemode = null;
             }
 
             if (ourRes.MapEntities != null)
-                foreach (var entity in ourRes.MapEntities)
-                {
-                    PublicAPI.deleteEntity(entity);
-                }
+            foreach (var entity in ourRes.MapEntities)
+            {
+                PublicAPI.deleteEntity(entity);
+            }
 
             if (CurrentMap == ourRes) CurrentMap = null;
 
@@ -970,7 +970,7 @@ namespace CherryMPServer
             {
                 var ent = PublicAPI.createPed((PedHash)vehicle.getElementData<int>("model"),
                     new Vector3(vehicle.getElementData<float>("posX"), vehicle.getElementData<float>("posY"),
-                        vehicle.getElementData<float>("posZ")), vehicle.getElementData<float>("heading"), dimension);
+                        vehicle.getElementData<float>("posZ")),vehicle.getElementData<float>("heading"), dimension);
                 res.MapEntities.Add(ent);
             }
 
@@ -995,7 +995,7 @@ namespace CherryMPServer
                 PublicAPI.removeIpl(point.getElementData<string>("name"));
             }
         }
-
+        
         private IEnumerable<Script> InstantiateScripts(Assembly targetAssembly)
         {
             //var types = targetAssembly.GetExportedTypes();
@@ -1039,7 +1039,7 @@ namespace CherryMPServer
                     compParams.ReferencedAssemblies.Add(AssemblyReferences[s]);
                 else compParams.ReferencedAssemblies.Add(s);
             }
-
+            
             compParams.GenerateInMemory = true;
             compParams.GenerateExecutable = false;
 
@@ -1066,7 +1066,7 @@ namespace GTANResource
 }}", script[s].Replace("Constructor(", "Constructor" + s + "("), s);
                 }
             }
-
+            
             try
             {
                 CompilerResults results;
@@ -1093,7 +1093,7 @@ namespace GTANResource
                         allWarns = allWarns && error.IsWarning;
                     }
 
-
+                    
                     if (!allWarns)
                         return null;
                 }
@@ -1139,7 +1139,7 @@ namespace GTANResource
                 full = PacketOptimization.WriteLightSync(fullPacket);
             }
 
-            foreach (var client in exception.Streamer.GetNearClients())
+            foreach(var client in exception.Streamer.GetNearClients())
             {
                 if (client.Fake) continue;
                 if (client.NetConnection.Status == NetConnectionStatus.Disconnected) continue;
@@ -1154,13 +1154,13 @@ namespace GTANResource
                         var lastUpdateReceived = client.LastPacketReceived.Get(exception.handle.Value);
 
                         if (lastUpdateReceived == 0 || Program.GetTicks() - lastUpdateReceived > 1000)
-                        {
-                            msg.Write((byte)PacketType.BasicSync);
+                        { 
+                            msg.Write((byte) PacketType.BasicSync);
                             msg.Write(basic.Length);
                             msg.Write(basic);
                             Server.SendMessage(msg, client.NetConnection,
                                 NetDeliveryMethod.UnreliableSequenced,
-                                (int)ConnectionChannel.BasicSync);
+                                (int) ConnectionChannel.BasicSync);
 
                             client.LastPacketReceived.Set(exception.handle.Value, Program.GetTicks());
                         }
@@ -1294,12 +1294,12 @@ namespace GTANResource
 
                         if (lastUpdateReceived == 0 || Program.GetTicks() - lastUpdateReceived > 1000)
                         {
-                            msg.Write((byte)PacketType.BasicSync);
+                            msg.Write((byte) PacketType.BasicSync);
                             msg.Write(basic.Length);
                             msg.Write(basic);
                             Server.SendMessage(msg, client.NetConnection,
                                 NetDeliveryMethod.UnreliableSequenced,
-                                (int)ConnectionChannel.BasicSync);
+                                (int) ConnectionChannel.BasicSync);
 
                             client.LastPacketReceived.Set(exception.handle.Value, Program.GetTicks());
                         }
@@ -1692,7 +1692,7 @@ namespace GTANResource
                                 //{
                                 obj.Gamemode = string.IsNullOrEmpty(GamemodeName)
                                     ? Gamemode?
-                                        .DirectoryName ?? "GTA Network"
+                                        .DirectoryName ?? "Cherry Multiplayer"
                                     : GamemodeName;
                                 //}
                                 //lock (Clients)
@@ -1742,25 +1742,25 @@ namespace GTANResource
                                                         if (pass)
                                                         {
                                                             ThreadPool.QueueUserWorkItem((WaitCallback)delegate
-                                                            {
-                                                                var cancelArg = new CancelEventArgs();
+                                                           {
+                                                               var cancelArg = new CancelEventArgs();
 
-                                                                lock (RunningResources)
-                                                                {
-                                                                    RunningResources.ForEach(
-                                                                        fs =>
-                                                                            fs.Engines.ForEach(
-                                                                                en =>
-                                                                                    en.InvokeChatCommand(client,
-                                                                                        data.Message, cancelArg)));
-                                                                }
+                                                               lock (RunningResources)
+                                                               {
+                                                                   RunningResources.ForEach(
+                                                                       fs =>
+                                                                           fs.Engines.ForEach(
+                                                                               en =>
+                                                                                   en.InvokeChatCommand(client,
+                                                                                       data.Message, cancelArg)));
+                                                               }
 
-                                                                if (!cancelArg.Cancel)
-                                                                {
-                                                                    if (!CommandHandler.Parse(client, data.Message))
-                                                                        PublicAPI.sendChatMessageToPlayer(client, ErrorCmd);
-                                                                }
-                                                            });
+                                                               if (!cancelArg.Cancel)
+                                                               {
+                                                                   if (!CommandHandler.Parse(client, data.Message))
+                                                                       PublicAPI.sendChatMessageToPlayer(client, ErrorCmd);
+                                                               }
+                                                           });
                                                         }
                                                         else
                                                         {
@@ -1783,26 +1783,26 @@ namespace GTANResource
                                                     }
 
                                                     ThreadPool.QueueUserWorkItem((WaitCallback)delegate
-                                                    {
-                                                        lock (RunningResources)
-                                                            RunningResources.ForEach(
-                                                                fs =>
-                                                                    fs.Engines.ForEach(
-                                                                        en =>
-                                                                            pass =
-                                                                                pass &&
-                                                                                en.InvokeChatMessage(client,
-                                                                                    data.Message)));
+                                                   {
+                                                       lock (RunningResources)
+                                                           RunningResources.ForEach(
+                                                               fs =>
+                                                                   fs.Engines.ForEach(
+                                                                       en =>
+                                                                           pass =
+                                                                               pass &&
+                                                                               en.InvokeChatMessage(client,
+                                                                                   data.Message)));
 
-                                                        if (pass)
-                                                        {
-                                                            data.Id = client.NetConnection.RemoteUniqueIdentifier;
-                                                            data.Sender = client.Name;
-                                                            SendToAll(data, PacketType.ChatData, true,
-                                                                ConnectionChannel.Chat);
-                                                            Program.Output(data.Sender + ": " + data.Message);
-                                                        }
-                                                    });
+                                                       if (pass)
+                                                       {
+                                                           data.Id = client.NetConnection.RemoteUniqueIdentifier;
+                                                           data.Sender = client.Name;
+                                                           SendToAll(data, PacketType.ChatData, true,
+                                                               ConnectionChannel.Chat);
+                                                           Program.Output(data.Sender + ": " + data.Message);
+                                                       }
+                                                   });
                                                 }
                                             }
                                             catch (IndexOutOfRangeException)
@@ -2194,7 +2194,7 @@ namespace GTANResource
                                                         VehicleOccupants[client.CurrentVehicle.Value].Contains(client))
                                                         VehicleOccupants[client.CurrentVehicle.Value].Remove(client);
 
-
+                                                        
 
                                                     lock (RunningResources)
                                                         RunningResources.ForEach(fs => fs.Engines.ForEach(en =>
@@ -2202,7 +2202,7 @@ namespace GTANResource
                                                             en.InvokePlayerExitVehicle(client, client.CurrentVehicle);
                                                         }));
                                                 }
-
+   
                                                 client.IsInVehicleInternal = false;
                                                 client.IsInVehicle = false;
                                                 client.CurrentVehicle = new NetHandle(0);
@@ -2878,7 +2878,7 @@ namespace GTANResource
                     //FileServer.Dispose(); //Causes nullref on server termination
                     if (UseUPnP) Server.UPnP?.DeleteForwardingRule(Port);
                 }
-                catch (Exception e) { Program.Output(e.ToString()); }
+                catch(Exception e) { Program.Output(e.ToString()); }
 
                 ReadyToClose = true;
                 return;
@@ -2911,10 +2911,10 @@ namespace GTANResource
                             var remaining = Downloads[i].Files[0].Data.Length - Downloads[i].Files[0].BytesSent;
                             int sendBytes = (remaining > Downloads[i].ChunkSize
                                 ? Downloads[i].ChunkSize
-                                : (int)remaining);
+                                : (int) remaining);
 
                             var updateObj = Server.CreateMessage();
-                            updateObj.Write((byte)PacketType.FileTransferTick);
+                            updateObj.Write((byte) PacketType.FileTransferTick);
                             updateObj.Write(Downloads[i].Files[0].Id);
                             updateObj.Write(sendBytes);
                             updateObj.Write(Downloads[i].Files[0].Data, (int)Downloads[i].Files[0].BytesSent, sendBytes);
@@ -3004,118 +3004,118 @@ namespace GTANResource
         {
             var args = DecodeArgumentList(data.Arguments?.ToArray()).ToList();
 
-            switch ((SyncEventType)data.EventType)
+            switch ((SyncEventType) data.EventType)
             {
                 case SyncEventType.DoorStateChange:
+                {
+                    var doorId = (int) args[1];
+                    var newFloat = (bool) args[2];
+                    if (NetEntityHandler.ToDict().ContainsKey((int) args[0]))
                     {
-                        var doorId = (int)args[1];
-                        var newFloat = (bool)args[2];
-                        if (NetEntityHandler.ToDict().ContainsKey((int)args[0]))
-                        {
-                            if (newFloat)
-                                ((VehicleProperties)NetEntityHandler.ToDict()[(int)args[0]]).Doors |= (byte)(1 << doorId);
-                            else
-                                ((VehicleProperties)NetEntityHandler.ToDict()[(int)args[0]]).Doors &= (byte)(~(1 << doorId));
-                        }
+                        if (newFloat)
+                            ((VehicleProperties) NetEntityHandler.ToDict()[(int) args[0]]).Doors |= (byte)(1 << doorId);
+                        else
+                            ((VehicleProperties)NetEntityHandler.ToDict()[(int)args[0]]).Doors &= (byte)(~(1 << doorId));
                     }
+                }
                     break;
                 case SyncEventType.TrailerDeTach:
+                {
+                    var newState = (bool) args[0];
+                    if (!newState)
                     {
-                        var newState = (bool)args[0];
-                        if (!newState)
+                        if (NetEntityHandler.ToDict().ContainsKey((int) args[1]))
                         {
-                            if (NetEntityHandler.ToDict().ContainsKey((int)args[1]))
+                            if (
+                                NetEntityHandler.ToDict()
+                                    .ContainsKey((NetEntityHandler.NetToProp<VehicleProperties>((int) args[1])).Trailer))
+                                ((VehicleProperties)
+                                    NetEntityHandler.ToDict()[
+                                        NetEntityHandler.NetToProp<VehicleProperties>((int) args[1]).Trailer])
+                                    .TraileredBy = 0;
+
+                            ((VehicleProperties) NetEntityHandler.ToDict()[(int) args[1]]).Trailer = 0;
+                        }
+                    }
+                    else
+                    {
+                        if (NetEntityHandler.ToDict().ContainsKey((int)args[1]))
+                            ((VehicleProperties)NetEntityHandler.ToDict()[(int)args[1]]).Trailer = (int)args[2];
+
+                        if (NetEntityHandler.ToDict().ContainsKey((int)args[2]))
+                            ((VehicleProperties)NetEntityHandler.ToDict()[(int)args[2]]).TraileredBy = (int)args[1];
+                    }
+
+                    lock (RunningResources)
+                        RunningResources.ForEach(
+                            fs => fs.Engines.ForEach(en =>
                             {
-                                if (
-                                    NetEntityHandler.ToDict()
-                                        .ContainsKey((NetEntityHandler.NetToProp<VehicleProperties>((int)args[1])).Trailer))
-                                    ((VehicleProperties)
-                                        NetEntityHandler.ToDict()[
-                                            NetEntityHandler.NetToProp<VehicleProperties>((int)args[1]).Trailer])
-                                        .TraileredBy = 0;
+                                en.InvokeVehicleTrailerChange(new NetHandle((int)args[1]), (bool)args[0] ? new NetHandle((int)args[2]) : new NetHandle());
+                            }));
+                        break;
+                }
+                case SyncEventType.TireBurst:
+                {
+                    var veh = (int)args[0];
+                    var tireId = (int)args[1];
+                    var isBursted = (bool)args[2];
+                    if (NetEntityHandler.ToDict().ContainsKey(veh))
+                    {
+                        var oldValue = (((VehicleProperties) NetEntityHandler.ToDict()[(int) args[0]]).Tires &
+                                        (byte) (1 << tireId)) != 0;
 
-                                ((VehicleProperties)NetEntityHandler.ToDict()[(int)args[1]]).Trailer = 0;
-                            }
-                        }
+                        if (isBursted)
+                            ((VehicleProperties)NetEntityHandler.ToDict()[(int)args[0]]).Tires |= (byte)(1 << tireId);
                         else
+                            ((VehicleProperties)NetEntityHandler.ToDict()[(int)args[0]]).Tires &= (byte)(~(1 << tireId));
+
+                        if (oldValue ^ isBursted)
                         {
-                            if (NetEntityHandler.ToDict().ContainsKey((int)args[1]))
-                                ((VehicleProperties)NetEntityHandler.ToDict()[(int)args[1]]).Trailer = (int)args[2];
-
-                            if (NetEntityHandler.ToDict().ContainsKey((int)args[2]))
-                                ((VehicleProperties)NetEntityHandler.ToDict()[(int)args[2]]).TraileredBy = (int)args[1];
-                        }
-
-                        lock (RunningResources)
+                            lock (RunningResources)
                             RunningResources.ForEach(
                                 fs => fs.Engines.ForEach(en =>
                                 {
-                                    en.InvokeVehicleTrailerChange(new NetHandle((int)args[1]), (bool)args[0] ? new NetHandle((int)args[2]) : new NetHandle());
+                                    en.InvokeVehicleTyreBurst(new NetHandle((int) args[0]), tireId);
                                 }));
-                        break;
-                    }
-                case SyncEventType.TireBurst:
-                    {
-                        var veh = (int)args[0];
-                        var tireId = (int)args[1];
-                        var isBursted = (bool)args[2];
-                        if (NetEntityHandler.ToDict().ContainsKey(veh))
-                        {
-                            var oldValue = (((VehicleProperties)NetEntityHandler.ToDict()[(int)args[0]]).Tires &
-                                            (byte)(1 << tireId)) != 0;
-
-                            if (isBursted)
-                                ((VehicleProperties)NetEntityHandler.ToDict()[(int)args[0]]).Tires |= (byte)(1 << tireId);
-                            else
-                                ((VehicleProperties)NetEntityHandler.ToDict()[(int)args[0]]).Tires &= (byte)(~(1 << tireId));
-
-                            if (oldValue ^ isBursted)
-                            {
-                                lock (RunningResources)
-                                    RunningResources.ForEach(
-                                        fs => fs.Engines.ForEach(en =>
-                                        {
-                                            en.InvokeVehicleTyreBurst(new NetHandle((int)args[0]), tireId);
-                                        }));
-                            }
                         }
-                        break;
                     }
+                    break;
+                }
                 case SyncEventType.PickupPickedUp:
+                {
+                    var pickupId = (int) args[0];
+
+                    if (NetEntityHandler.ToDict().ContainsKey(pickupId))
                     {
-                        var pickupId = (int)args[0];
-
-                        if (NetEntityHandler.ToDict().ContainsKey(pickupId))
+                        if (!((PickupProperties) NetEntityHandler.ToDict()[pickupId]).PickedUp)
                         {
-                            if (!((PickupProperties)NetEntityHandler.ToDict()[pickupId]).PickedUp)
-                            {
-                                ((PickupProperties)NetEntityHandler.ToDict()[pickupId]).PickedUp = true;
-                                RunningResources.ForEach(res => res.Engines.ForEach(en => en.InvokePlayerPickup(sender, new NetHandle(pickupId))));
-                                if (((PickupProperties)NetEntityHandler.ToDict()[pickupId]).RespawnTime > 0)
-                                    PickupManager.Add(pickupId);
+                            ((PickupProperties) NetEntityHandler.ToDict()[pickupId]).PickedUp = true;
+                            RunningResources.ForEach(res => res.Engines.ForEach(en => en.InvokePlayerPickup(sender, new NetHandle(pickupId))));
+                            if (((PickupProperties)NetEntityHandler.ToDict()[pickupId]).RespawnTime > 0)
+                                PickupManager.Add(pickupId);
 
-                                if (
-                                    PickupToWeapon.Translate(
-                                        ((PickupProperties)NetEntityHandler.ToDict()[pickupId]).ModelHash) != 0)
-                                {
-                                    sender.Weapons.Add((WeaponHash)PickupToWeapon.Translate(((PickupProperties)NetEntityHandler.ToDict()[pickupId]).ModelHash), 0);
-                                }
+                            if (
+                                PickupToWeapon.Translate(
+                                    ((PickupProperties) NetEntityHandler.ToDict()[pickupId]).ModelHash) != 0)
+                            {
+                                sender.Weapons.Add((WeaponHash) PickupToWeapon.Translate(((PickupProperties)NetEntityHandler.ToDict()[pickupId]).ModelHash), 0);
                             }
                         }
-                        break;
                     }
+                    break;
+                }
                 case SyncEventType.StickyBombDetonation:
-                    {
-                        var playerId = (int)args[0];
-                        var c = PublicAPI.getPlayerFromHandle(new NetHandle(playerId));
+                {
+                    var playerId = (int) args[0];
+                    var c = PublicAPI.getPlayerFromHandle(new NetHandle(playerId));
 
-                        lock (RunningResources)
+                    lock (RunningResources)
                             RunningResources.ForEach(
                                 fs => fs.Engines.ForEach(en =>
                                 {
                                     en.InvokePlayerDetonateStickies(c);
                                 }));
-                    }
+                }
                     break;
             }
         }
@@ -3193,7 +3193,7 @@ namespace GTANResource
                 }
                 else if (arg is EntityArgument)
                 {
-                    list.Add(new NetHandle(((EntityArgument)arg).NetHandle));
+                    list.Add(new NetHandle(((EntityArgument) arg).NetHandle));
                 }
                 else if (arg is ListArgument)
                 {
@@ -3226,35 +3226,35 @@ namespace GTANResource
         public void SendToAll(object newData, PacketType packetType, bool important, ConnectionChannel channel)
         {
             lock (Clients)
-                foreach (var client in Clients)
-                {
-                    if (client.Fake) continue;
-                    var data = SerializeBinary(newData);
-                    NetOutgoingMessage msg = Server.CreateMessage();
-                    msg.Write((byte)packetType);
-                    msg.Write(data.Length);
-                    msg.Write(data);
-                    Server.SendMessage(msg, client.NetConnection,
-                        important ? NetDeliveryMethod.ReliableOrdered : NetDeliveryMethod.ReliableSequenced,
-                        (int)channel);
-                }
+            foreach (var client in Clients)
+            {
+                if (client.Fake) continue;
+                var data = SerializeBinary(newData);
+                NetOutgoingMessage msg = Server.CreateMessage();
+                msg.Write((byte)packetType);
+                msg.Write(data.Length);
+                msg.Write(data);
+                Server.SendMessage(msg, client.NetConnection,
+                    important ? NetDeliveryMethod.ReliableOrdered : NetDeliveryMethod.ReliableSequenced,
+                    (int)channel);
+            }
         }
-
+        
         public void SendToAll(object newData, PacketType packetType, bool important, Client exclude, ConnectionChannel channel)
         {
             lock (Clients)
-                foreach (var client in Clients)
-                {
-                    if (client == exclude || client.Fake) continue;
-                    var data = SerializeBinary(newData);
-                    NetOutgoingMessage msg = Server.CreateMessage();
-                    msg.Write((byte)packetType);
-                    msg.Write(data.Length);
-                    msg.Write(data);
-                    Server.SendMessage(msg, client.NetConnection,
-                        important ? NetDeliveryMethod.ReliableOrdered : NetDeliveryMethod.ReliableSequenced,
-                        (int)channel);
-                }
+            foreach (var client in Clients)
+            {
+                if (client == exclude || client.Fake) continue;
+                var data = SerializeBinary(newData);
+                NetOutgoingMessage msg = Server.CreateMessage();
+                msg.Write((byte)packetType);
+                msg.Write(data.Length);
+                msg.Write(data);
+                Server.SendMessage(msg, client.NetConnection,
+                    important ? NetDeliveryMethod.ReliableOrdered : NetDeliveryMethod.ReliableSequenced,
+                    (int)channel);
+            }
         }
 
         public object DeserializeBinary<T>(byte[] data)
@@ -3267,7 +3267,7 @@ namespace GTANResource
                 }
                 catch (ProtoException e)
                 {
-                    if (LogLevel > 0) Program.Output("WARN: Deserialization failed: " + e.Message);
+                    if(LogLevel > 0) Program.Output("WARN: Deserialization failed: " + e.Message);
                     return null;
                 }
             }
@@ -3284,7 +3284,7 @@ namespace GTANResource
 
         //public byte GetChannelIdForConnection(Client conn)
         //{
-        //lock (Clients) return (byte)(((Clients.IndexOf(conn)) % 31) + 1);
+            //lock (Clients) return (byte)(((Clients.IndexOf(conn)) % 31) + 1);
         //}
 
         public NativeArgument ParseReturnType(Type t)
@@ -3380,11 +3380,11 @@ namespace GTANResource
                 }
                 else if (o is EntityPointerArgument)
                 {
-                    list.Add((EntityPointerArgument)o);
+                    list.Add((EntityPointerArgument) o);
                 }
                 else if (o is NetHandle)
                 {
-                    list.Add(new EntityArgument(((NetHandle)o).Value));
+                    list.Add(new EntityArgument(((NetHandle) o).Value));
                 }
                 else if (o is Entity)
                 {
@@ -3392,12 +3392,12 @@ namespace GTANResource
                 }
                 else if (o is Client)
                 {
-                    list.Add(new EntityArgument(((Client)o).handle.Value));
+                    list.Add(new EntityArgument(((Client) o).handle.Value));
                 }
                 else if (o is IList)
                 {
                     var larg = new ListArgument();
-                    var l = ((IList)o);
+                    var l = ((IList) o);
                     object[] array = new object[l.Count];
                     l.CopyTo(array, 0);
                     larg.Data = new List<NativeArgument>(ParseNativeArguments(array));
@@ -3457,7 +3457,7 @@ namespace GTANResource
             {
                 var msg = Server.CreateMessage();
 
-                msg.Write((byte)PacketType.NativeCall);
+                msg.Write((byte) PacketType.NativeCall);
                 msg.Write(bin.Length);
                 msg.Write(bin);
 
@@ -3477,8 +3477,8 @@ namespace GTANResource
 
             DateTime start = DateTime.Now;
             while (output == null && DateTime.Now.Subtract(start).Milliseconds < 10000)
-            { }
-
+            {}
+            
             return output;
         }
 
@@ -3658,11 +3658,11 @@ namespace GTANResource
         {
             if (NetEntityHandler.ToDict().ContainsKey(target.handle.Value))
             {
-                ((PlayerProperties)NetEntityHandler.ToDict()[target.handle.Value]).Team = newTeam;
+                ((PlayerProperties) NetEntityHandler.ToDict()[target.handle.Value]).Team = newTeam;
             }
 
             var obj = new SyncEvent();
-            obj.EventType = (byte)ServerEventType.PlayerTeamChange;
+            obj.EventType = (byte) ServerEventType.PlayerTeamChange;
             obj.Arguments = ParseNativeArguments(target.handle.Value, newTeam);
 
             SendToAll(obj, PacketType.ServerEvent, true, ConnectionChannel.EntityBackend);

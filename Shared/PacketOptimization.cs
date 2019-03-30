@@ -45,7 +45,7 @@ namespace CherryMPShared
             byteArray.AddRange(GetBytes(data.Velocity.X));
             byteArray.AddRange(GetBytes(data.Velocity.Y));
             byteArray.AddRange(GetBytes(data.Velocity.Z));
-
+            
             // Write player health, armor and walking speed
             byteArray.Add(data.PlayerHealth.Value);
             byteArray.Add(data.PedArmor.Value);
@@ -76,7 +76,7 @@ namespace CherryMPShared
                 // Add the seat we are trying to enter
                 byteArray.Add((byte)data.SeatTryingToEnter.Value);
             }
-
+            
             return byteArray.ToArray();
         }
 
@@ -99,12 +99,12 @@ namespace CherryMPShared
 
             // Write player model
             byteArray.AddRange(GetBytes(data.PedModelHash.Value));
-
+            
             // Write player's latency
             if (data.Latency.HasValue)
             {
-                var latency = data.Latency.Value * 1000;
-                byteArray.AddRange(GetBytes((short)latency));
+                var latency = data.Latency.Value*1000;
+                byteArray.AddRange(GetBytes((short) latency));
             }
 
             return byteArray.ToArray();
@@ -146,7 +146,7 @@ namespace CherryMPShared
                 byteArray.AddRange(GetBytes(data.AimCoords.Y));
                 byteArray.AddRange(GetBytes(data.AimCoords.Z));
             }
-
+            
             // Are we the driver?
             if (CheckBit(data.Flag.Value, VehicleDataFlags.Driver))
             {
@@ -165,14 +165,14 @@ namespace CherryMPShared
                 byteArray.AddRange(GetBytes(data.Velocity.Z));
 
                 // Write vehicle health
-                byteArray.AddRange(GetBytes((short)((int)data.VehicleHealth.Value)));
+                byteArray.AddRange(GetBytes((short) ((int) data.VehicleHealth.Value)));
 
                 // Write engine stuff
-                byte rpm = (byte)(data.RPM.Value * byte.MaxValue);
+                byte rpm = (byte) (data.RPM.Value*byte.MaxValue);
 
                 float angle = Extensions.Clamp(data.Steering.Value, -60f, 60f);
                 angle += 60f;
-                byte angleCrammed = (byte)((angle / 120f) * byte.MaxValue);
+                byte angleCrammed = (byte) ((angle/120f)*byte.MaxValue);
 
                 byteArray.Add(rpm);
                 byteArray.Add(angleCrammed);
@@ -205,7 +205,7 @@ namespace CherryMPShared
             byteArray.AddRange(GetBytes(data.VehicleHandle.Value));
 
             // Write his seat
-            byteArray.Add((byte)data.VehicleSeat.Value);
+            byteArray.Add((byte) data.VehicleSeat.Value);
 
             // Write the gun model
             byteArray.AddRange(GetBytes(data.WeaponHash.Value));
@@ -307,7 +307,7 @@ namespace CherryMPShared
 
             // Write vehicle's nethandle.
             byteArray.AddRange(GetBytes(data.VehicleHandle.Value));
-
+            
             // Write vehicle position, rotation and velocity
             byteArray.AddRange(GetBytes(data.Position.X));
             byteArray.AddRange(GetBytes(data.Position.Y));
@@ -357,7 +357,7 @@ namespace CherryMPShared
             byteArray.AddRange(GetBytes(data.Position.Z));
 
             byteArray.AddRange(GetBytes(data.Quaternion.Z));
-
+            
             // Write vehicle health
             byteArray.AddRange(GetBytes((short)((int)data.VehicleHealth.Value)));
 
@@ -464,7 +464,7 @@ namespace CherryMPShared
 
             // Read player nethandle
             data.NetHandle = r.ReadInt32();
-
+            
             // Read player model
             data.PedModelHash = r.ReadInt32();
 
@@ -474,9 +474,9 @@ namespace CherryMPShared
             {
                 var latency = r.ReadInt16();
 
-                data.Latency = latency / 1000f;
+                data.Latency = latency/1000f;
             }
-
+            
             return data;
         }
 
@@ -542,10 +542,10 @@ namespace CherryMPShared
 
                 // read RPM & steering angle
                 byte rpmCompressed = r.ReadByte();
-                data.RPM = rpmCompressed / (float)byte.MaxValue;
+                data.RPM = rpmCompressed/(float) byte.MaxValue;
 
                 byte angleCompressed = r.ReadByte();
-                var angleDenorm = 120f * (angleCompressed / (float)byte.MaxValue);
+                var angleDenorm = 120f*(angleCompressed/(float) byte.MaxValue);
                 data.Steering = angleDenorm - 60f;
             }
 
@@ -559,7 +559,7 @@ namespace CherryMPShared
 
             // Read player nethandle
             data.NetHandle = r.ReadInt32();
-
+            
             // read model
             data.PedModelHash = r.ReadInt32();
 
@@ -597,7 +597,7 @@ namespace CherryMPShared
             if (r.CanRead(2))
             {
                 var latency = r.ReadInt16();
-                data.Latency = latency / 1000f;
+                data.Latency = latency/1000f;
             }
 
             return data;
@@ -694,7 +694,7 @@ namespace CherryMPShared
 
             // Read is dead
             if (r.ReadBoolean())
-                data.Flag = (short)VehicleDataFlags.VehicleDead;
+                data.Flag = (short) VehicleDataFlags.VehicleDead;
             else
                 data.Flag = 0;
 
@@ -720,13 +720,13 @@ namespace CherryMPShared
             // Read position and heading
             Vector3 position = new Vector3();
             Vector3 rotation = new Vector3();
-
+            
             position.X = r.ReadSingle();
             position.Y = r.ReadSingle();
             position.Z = r.ReadSingle();
 
             rotation.Z = r.ReadSingle();
-
+            
             data.Position = position;
             data.Quaternion = rotation;
 
@@ -735,7 +735,7 @@ namespace CherryMPShared
 
             // Read is dead
             if (r.ReadBoolean())
-                data.Flag |= (short)VehicleDataFlags.VehicleDead;
+                data.Flag |= (short) VehicleDataFlags.VehicleDead;
             else
                 data.Flag = 0;
 
@@ -755,14 +755,14 @@ namespace CherryMPShared
 
         public static ushort CompressSingle(float value)
         {
-            return (ushort)(value * 256);
+            return (ushort) (value*256);
         }
 
         public static float DecompressSingle(ushort value)
         {
-            return value / 256f;
+            return value/256f;
         }
-
+        
         public static bool CheckBit(int value, VehicleDataFlags flag)
         {
             return (value & (int)flag) != 0;
@@ -780,12 +780,12 @@ namespace CherryMPShared
 
         public static int SetBit(int value, EntityFlag flag)
         {
-            return value |= (int)flag;
+            return value |= (int) flag;
         }
 
         public static int ResetBit(int value, EntityFlag flag)
         {
-            return value &= ~(int)flag;
+            return value &= ~(int) flag;
         }
 
         public static bool CheckBit(int value, int flag)

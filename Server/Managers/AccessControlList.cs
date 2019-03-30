@@ -58,49 +58,49 @@ namespace CherryMPServer.Managers
         public void MergeACL(ACLRoot resourceAcl)
         {
             if (resourceAcl.Groups != null)
-                foreach (var group in resourceAcl.Groups)
+            foreach (var group in resourceAcl.Groups)
+            {
+                if (_mainAcl.Groups.Any(grp => grp.Name == group.Name))
                 {
-                    if (_mainAcl.Groups.Any(grp => grp.Name == group.Name))
+                    var ourGrp = _mainAcl.Groups.First(grp => grp.Name == group.Name);
+                    
+                    foreach (var right in group.ACLRights)
                     {
-                        var ourGrp = _mainAcl.Groups.First(grp => grp.Name == group.Name);
-
-                        foreach (var right in group.ACLRights)
+                        if (!ourGrp.ACLRights.Any(r => r.Name == right.Name))
                         {
-                            if (!ourGrp.ACLRights.Any(r => r.Name == right.Name))
-                            {
-                                ourGrp.ACLRights.Add(right);
-                            }
+                            ourGrp.ACLRights.Add(right);
                         }
+                    }
 
-                        /* // Disabled for security measures
-                        foreach ( var obj in group.Objects)
-                        {
-                            if (!ourGrp.Objects.Any(o => o.Name == obj.Name))
-                                ourGrp.Objects.Add(obj);
-                        }*/
-                    }
-                    else
+                    /* // Disabled for security measures
+                    foreach ( var obj in group.Objects)
                     {
-                        _mainAcl.Groups.Add(group);
-                    }
+                        if (!ourGrp.Objects.Any(o => o.Name == obj.Name))
+                            ourGrp.Objects.Add(obj);
+                    }*/
                 }
+                else
+                {
+                    _mainAcl.Groups.Add(group);
+                }
+            }
 
             if (resourceAcl.RightLists != null)
-                foreach (var rights in resourceAcl.RightLists)
+            foreach (var rights in resourceAcl.RightLists)
+            {
+                if (_mainAcl.RightLists.Any(r => r.Name == rights.Name))
                 {
-                    if (_mainAcl.RightLists.Any(r => r.Name == rights.Name))
+                    var ourList = _mainAcl.RightLists.First(r => r.Name == rights.Name);
+                    foreach (var right in rights.Rights)
                     {
-                        var ourList = _mainAcl.RightLists.First(r => r.Name == rights.Name);
-                        foreach (var right in rights.Rights)
-                        {
-                            if (!ourList.Rights.Any(r => r.Name == right.Name)) ourList.Rights.Add(right);
-                        }
-                    }
-                    else
-                    {
-                        _mainAcl.RightLists.Add(rights);
+                        if (!ourList.Rights.Any(r => r.Name == right.Name)) ourList.Rights.Add(right);
                     }
                 }
+                else
+                {
+                    _mainAcl.RightLists.Add(rights);
+                }
+            }
         }
 
         public void LoadACL()
@@ -135,13 +135,13 @@ namespace CherryMPServer.Managers
         private ACLObject FindObjectByName(string objName, ObjectType type)
         {
             foreach (var grp in _mainAcl.Groups)
-                foreach (var obj in grp.Objects)
+            foreach (var obj in grp.Objects)
+            {
+                if (obj.Name == type.ToString() + "." + objName)
                 {
-                    if (obj.Name == type.ToString() + "." + objName)
-                    {
-                        return obj;
-                    }
+                    return obj;
                 }
+            }
 
             return null;
         }
@@ -210,7 +210,7 @@ namespace CherryMPServer.Managers
         {
             _loggedInClients.Remove(player);
         }
-
+        
     }
 
 

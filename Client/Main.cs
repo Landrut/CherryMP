@@ -167,7 +167,6 @@ namespace CherryMP
 
         public Main()
         {
-
             Process.GetProcesses().Where(x => x.ProcessName.ToLower().StartsWith("gameoverlay")).ToList().ForEach(x => x.Kill());
 
             World.DestroyAllCameras();
@@ -260,14 +259,13 @@ namespace CherryMP
             CEFManager.InitializeCef();
             Audio.SetAudioFlag(AudioFlag.LoadMPData, true);
             Audio.SetAudioFlag(AudioFlag.DisableBarks, true);
-            Audio.SetAudioFlag(AudioFlag.DisableFlightMusic, true);
             Audio.SetAudioFlag(AudioFlag.PoliceScannerDisabled, true);
-            Audio.SetAudioFlag(AudioFlag.OnlyAllowScriptTriggerPoliceScanner, true);
+            Audio.SetAudioFlag(AudioFlag.DisableFlightMusic, true);
             Function.Call((Hash)0x552369F549563AD5, false); //_FORCE_AMBIENT_SIREN
 
 
 
-            GlobalVariable.Get(2576573).Write(1); //Enable MP cars?
+            GlobalVariable.Get(2576573).Write(1);
 
             ThreadPool.QueueUserWorkItem(delegate
             {
@@ -846,13 +844,13 @@ namespace CherryMP
         {
             MainMenu = new TabView("Cherry Multiplayer");
             MainMenu.CanLeave = false;
-            MainMenu.MoneySubtitle = "Cherry-MP " + CurrentVersion;
+            MainMenu.MoneySubtitle = "Cherry MP " + CurrentVersion;
 
             _mainMapItem = new TabMapItem();
 
             #region Welcome Screen
             {
-                _welcomePage = new TabWelcomeMessageItem("Welcome to Cherry Multiplayer", "Съешь ещё этих мягких французских булок.");
+                _welcomePage = new TabWelcomeMessageItem("Welcome to Cherry Multiplayer", "Development branch.");
                 MainMenu.Tabs.Add(_welcomePage);
             }
             #endregion
@@ -1950,7 +1948,7 @@ namespace CherryMP
                     {
                         if (NetEntityHandler.ClientMap.ContainsKey(pair.Key)) continue;
                         NetEntityHandler.CreateObject(pair.Key, pair.Value);
-                        GTA.UI.Screen.ShowSubtitle("Creating object...", 500000);
+                        //GTA.UI.Screen.ShowSubtitle("Creating object...", 500000);
                     }
 
                 if (map.Vehicles != null)
@@ -1958,7 +1956,7 @@ namespace CherryMP
                     {
                         if (NetEntityHandler.ClientMap.ContainsKey(pair.Key)) continue;
                         NetEntityHandler.CreateVehicle(pair.Key, pair.Value);
-                        GTA.UI.Screen.ShowSubtitle("Creating vehicle...", 500000);
+                        //GTA.UI.Screen.ShowSubtitle("Creating vehicle...", 500000);
                     }
 
                 if (map.Blips != null)
@@ -2728,7 +2726,7 @@ namespace CherryMP
         private int _lastPlayerArmor = 0;
         private bool _lastVehicleSiren;
         private WeaponHash _lastPlayerWeapon = WeaponHash.Unarmed;
-        private PedHash _lastPlayerModel = PedHash.Jesus01;
+        private PedHash _lastPlayerModel = PedHash.Clown01SMY;
 
         private int _lastBytesSent;
         private int _lastBytesReceived;
@@ -4231,7 +4229,6 @@ namespace CherryMP
 
             _currentServerIp = ip;
             _currentServerPort = port == 0 ? Port : port;
-
             CherryDiscord.CherryDiscord.InMenuDiscordDeinitializePresence();
             CherryDiscord.CherryDiscord.OnServerDiscordInitialize(PlayerSettings.DisplayName.Replace("_", " "), "Cherry Roleplay");
             CherryDiscord.CherryDiscord.OnServerDiscordUpdatePresence();
@@ -4325,6 +4322,7 @@ namespace CherryMP
                 _serverProcess.Dispose();
                 _serverProcess = null;
             }
+
             CherryDiscord.CherryDiscord.OnServerDiscordDeinitializePresence();
             CherryDiscord.CherryDiscord.InMenuDiscordInitialize(CurrentVersion.ToString());
             CherryDiscord.CherryDiscord.InMenuDiscordUpdatePresence();
@@ -4556,65 +4554,66 @@ namespace CherryMP
                 case PacketType.CreateEntity:
                     {
                         var len = msg.ReadInt32();
-                        LogManager.DebugLog("Received CreateEntity");
-                        var data = DeserializeBinary<CreateEntity>(msg.ReadBytes(len)) as CreateEntity;
-                        if (data != null && data.Properties != null)
+                        //LogManager.DebugLog("Received CreateEntity");
+                        if (DeserializeBinary<CreateEntity>(msg.ReadBytes(len)) is CreateEntity data && data.Properties != null)
                         {
-                            LogManager.DebugLog("CreateEntity was not null. Type: " + data.EntityType + ", Model: " + data.Properties.ModelHash);
-                            if (data.EntityType == (byte)EntityType.Vehicle)
+                            switch (data.EntityType)
                             {
-                                var prop = (VehicleProperties)data.Properties;
-                                var veh = NetEntityHandler.CreateVehicle(data.NetHandle, prop);
-                                if (NetEntityHandler.Count(typeof(RemoteVehicle)) < StreamerThread.MAX_VEHICLES)
-                                    NetEntityHandler.StreamIn(veh);
-                                LogManager.DebugLog("CreateEntity done");
-                            }
-                            else if (data.EntityType == (byte)EntityType.Prop)
-                            {
-                                LogManager.DebugLog("It was a prop. Spawning...");
-                                var prop = NetEntityHandler.CreateObject(data.NetHandle, data.Properties);
-                                if (NetEntityHandler.Count(typeof(RemoteProp)) < StreamerThread.MAX_OBJECTS)
-                                    NetEntityHandler.StreamIn(prop);
-                            }
-                            else if (data.EntityType == (byte)EntityType.Blip)
-                            {
-                                var prop = (BlipProperties)data.Properties;
-                                var blip = NetEntityHandler.CreateBlip(data.NetHandle, prop);
-                                if (NetEntityHandler.Count(typeof(RemoteBlip)) < StreamerThread.MAX_BLIPS)
-                                    NetEntityHandler.StreamIn(blip);
-                            }
-                            else if (data.EntityType == (byte)EntityType.Marker)
-                            {
-                                var prop = (MarkerProperties)data.Properties;
-                                var mark = NetEntityHandler.CreateMarker(data.NetHandle, prop);
-                                if (NetEntityHandler.Count(typeof(RemoteMarker)) < StreamerThread.MAX_MARKERS)
-                                    NetEntityHandler.StreamIn(mark);
-                            }
-                            else if (data.EntityType == (byte)EntityType.Pickup)
-                            {
-                                var prop = (PickupProperties)data.Properties;
-                                var pickup = NetEntityHandler.CreatePickup(data.NetHandle, prop);
-                                if (NetEntityHandler.Count(typeof(RemotePickup)) < StreamerThread.MAX_PICKUPS)
-                                    NetEntityHandler.StreamIn(pickup);
-                            }
-                            else if (data.EntityType == (byte)EntityType.TextLabel)
-                            {
-                                var prop = (TextLabelProperties)data.Properties;
-                                var label = NetEntityHandler.CreateTextLabel(data.NetHandle, prop);
-                                if (NetEntityHandler.Count(typeof(RemoteTextLabel)) < StreamerThread.MAX_LABELS)
-                                    NetEntityHandler.StreamIn(label);
-                            }
-                            else if (data.EntityType == (byte)EntityType.Ped)
-                            {
-                                var ped = NetEntityHandler.CreatePed(data.NetHandle, data.Properties as PedProperties);
-                                if (NetEntityHandler.Count(typeof(RemotePed)) < StreamerThread.MAX_PEDS)
-                                    NetEntityHandler.StreamIn(ped);
-                            }
-                            else if (data.EntityType == (byte)EntityType.Particle)
-                            {
-                                var ped = NetEntityHandler.CreateParticle(data.NetHandle, data.Properties as ParticleProperties);
-                                if (NetEntityHandler.Count(typeof(RemoteParticle)) < StreamerThread.MAX_PARTICLES)
-                                    NetEntityHandler.StreamIn(ped);
+                                case (byte)EntityType.Vehicle:
+                                    {
+                                        NetEntityHandler.CreateVehicle(data.NetHandle, (VehicleProperties)data.Properties);
+                                        //if (NetEntityHandler.Count(typeof(RemoteVehicle)) < StreamerThread.MAX_VEHICLES)
+                                        //    NetEntityHandler.StreamIn(veh);
+                                    }
+                                    break;
+                                case (byte)EntityType.Prop:
+                                    {
+                                        NetEntityHandler.CreateObject(data.NetHandle, data.Properties);
+                                        //if (NetEntityHandler.Count(typeof(RemoteProp)) < StreamerThread.MAX_OBJECTS)
+                                        //    NetEntityHandler.StreamIn(prop);
+                                    }
+                                    break;
+                                case (byte)EntityType.Blip:
+                                    {
+                                        NetEntityHandler.CreateBlip(data.NetHandle, (BlipProperties)data.Properties);
+                                        //if (NetEntityHandler.Count(typeof(RemoteBlip)) < StreamerThread.MAX_BLIPS)
+                                        //    NetEntityHandler.StreamIn(blip);
+                                    }
+                                    break;
+                                case (byte)EntityType.Marker:
+                                    {
+                                        NetEntityHandler.CreateMarker(data.NetHandle, (MarkerProperties)data.Properties);
+                                        //if (NetEntityHandler.Count(typeof(RemoteMarker)) < StreamerThread.MAX_MARKERS)
+                                        //    NetEntityHandler.StreamIn(mark);
+                                    }
+                                    break;
+                                case (byte)EntityType.Pickup:
+                                    {
+                                        NetEntityHandler.CreatePickup(data.NetHandle, (PickupProperties)data.Properties);
+                                        //if (NetEntityHandler.Count(typeof(RemotePickup)) < StreamerThread.MAX_PICKUPS)
+                                        //    NetEntityHandler.StreamIn(pickup);
+                                    }
+                                    break;
+                                case (byte)EntityType.TextLabel:
+                                    {
+                                        NetEntityHandler.CreateTextLabel(data.NetHandle, (TextLabelProperties)data.Properties);
+                                        //if (NetEntityHandler.Count(typeof(RemoteTextLabel)) < StreamerThread.MAX_LABELS)
+                                        //    NetEntityHandler.StreamIn(label);
+                                    }
+                                    break;
+                                case (byte)EntityType.Ped:
+                                    {
+                                        NetEntityHandler.CreatePed(data.NetHandle, data.Properties as PedProperties);
+                                        //if (NetEntityHandler.Count(typeof(RemotePed)) < StreamerThread.MAX_PEDS)
+                                        //    NetEntityHandler.StreamIn(ped);
+                                    }
+                                    break;
+                                case (byte)EntityType.Particle:
+                                    {
+                                        var ped = NetEntityHandler.CreateParticle(data.NetHandle, data.Properties as ParticleProperties);
+                                        if (NetEntityHandler.Count(typeof(RemoteParticle)) < StreamerThread.MAX_PARTICLES) NetEntityHandler.StreamIn(ped);
+                                    }
+                                    break;
                             }
                         }
                     }
@@ -5810,7 +5809,7 @@ namespace CherryMP
             CustomAnimation = null;
             AnimationFlag = 0;
 
-            Util.Util.SetPlayerSkin(PedHash.Jesus01);
+            Util.Util.SetPlayerSkin(PedHash.Clown01SMY);
 
             Game.Player.Character.MaxHealth = 200;
             Game.Player.Character.Health = 200;

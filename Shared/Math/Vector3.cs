@@ -128,7 +128,7 @@ namespace CherryMPShared
         {
             return this + right;
         }
-
+        
         public Vector3 Subtract(Vector3 right)
         {
             return this - right;
@@ -136,12 +136,12 @@ namespace CherryMPShared
 
         public Vector3 Multiply(float right)
         {
-            return this * right;
+            return this*right;
         }
 
         public Vector3 Divide(float right)
         {
-            return this / right;
+            return this/right;
         }
 
         public static Vector3 RandomXY()
@@ -174,7 +174,7 @@ namespace CherryMPShared
 
         public float DistanceTo(Vector3 right)
         {
-            if ((object)right == null) return 0f;
+            if ((object) right == null) return 0f;
             return (float)Math.Sqrt(DistanceToSquared(right));
         }
 

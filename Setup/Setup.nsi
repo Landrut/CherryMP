@@ -1,10 +1,10 @@
 ;NSIS Modern User Interface
-;Cherry Multiplayer
+;Simple Native Multiplayer Installer
 
   !include "MUI2.nsh"
 
   Name "Cherry Multiplayer"
-  OutFile "CherryMPSetup.exe"
+  OutFile "CherryMP Install.exe"
 
   InstallDir "C:\Cherry Multiplayer"
 
@@ -32,15 +32,15 @@ ${EndIf}
 
   CreateShortCut "$DESKTOP\CherryMP.lnk" "$INSTDIR\CherryMP.exe" ""
   WriteUninstaller "$INSTDIR\Uninstall.exe"
-  WriteRegStr HKLM "SOFTWARE\WOW6432Node\Rockstar Games\Grand Theft Auto V" "CherryMPInstallDir" $INSTDIR
+  WriteRegStr HKLM "SOFTWARE\WOW6432Node\Rockstar Games\Grand Theft Auto V" "CherryMPInstallDir" "$INSTDIR\"
 
 SectionEnd
 
 Section "Uninstall"
-  
-  DeleteRegKey HKLM "SOFTWARE\WOW6432Node\Rockstar Games\Grand Theft Auto V\CherryMPInstallDir"
+
   Delete "$INSTDIR\Uninstall.exe"
   Delete "$DESKTOP\CherryMP.lnk"
   RMDir /r /REBOOTOK "$INSTDIR"
+  DeleteRegKey /ifempty HKLM "HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Rockstar Games\Grand Theft Auto V\CherryMPInstallDir"
 
 SectionEnd

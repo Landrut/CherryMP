@@ -11,9 +11,9 @@ namespace CherryMPServer.Managers
     {
         private const int UPDATE_RATE = 500;
         private const float SYNC_RANGE = 130;
-        private const float SYNC_RANGE_SQUARED = SYNC_RANGE * SYNC_RANGE;
+        private const float SYNC_RANGE_SQUARED = SYNC_RANGE*SYNC_RANGE;
         private const float DROPOFF = 30;
-        private const float DROPOFF_SQUARED = DROPOFF * DROPOFF;
+        private const float DROPOFF_SQUARED = DROPOFF*DROPOFF;
 
         private long _lastUpdate;
 
@@ -46,7 +46,7 @@ namespace CherryMPServer.Managers
                 }
             }
         }
-
+        
         public static bool IsVehicleUnoccupied(NetHandle vehicle)
         {
             var players = Program.ServerInstance.PublicAPI.getAllPlayers();
@@ -135,7 +135,7 @@ namespace CherryMPServer.Managers
             packet.Write(true);
 
             Program.ServerInstance.Server.SendMessage(packet, player.NetConnection, NetDeliveryMethod.ReliableOrdered,
-                (int)ConnectionChannel.SyncEvent);
+                (int) ConnectionChannel.SyncEvent);
 
             Syncers.Set(vehicle, player);
         }
