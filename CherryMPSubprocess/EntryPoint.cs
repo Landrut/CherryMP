@@ -9,6 +9,7 @@ using System.Xml.Serialization;
 using CherryMPShared;
 using Microsoft.Win32;
 using Ionic.Zip;
+using System.Reflection;
 
 namespace CherryMP
 {
@@ -54,6 +55,7 @@ namespace CherryMP
 
             var dictPath = @"HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Rockstar Games\Grand Theft Auto V";
             var GTANFolder = (string)Registry.GetValue(dictPath, "CherryMPInstallDir", null);
+
             if (GTANFolder != AppDomain.CurrentDomain.BaseDirectory)
             {
                 try
@@ -246,11 +248,11 @@ namespace CherryMP
 
             #region Check for new client version
 
-            /*ParseableVersion fileVersion = new ParseableVersion(0, 0, 0, 0);
+            ParseableVersion fileVersion = new ParseableVersion(0, 0, 0, 0);
             if (File.Exists(GTANFolder + "bin" + "\\" + "scripts" + "\\" + "CherryMP.dll"))
             {
                 fileVersion = ParseableVersion.Parse(FileVersionInfo.GetVersionInfo(GTANFolder + "bin" + "\\" + "scripts" + "\\" + "CherryMP.dll").FileVersion);
-            }*/
+            }
 
             splashScreen.SetPercent(30);
             /*using (var wc = new ImpatientWebClient())

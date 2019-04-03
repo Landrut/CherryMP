@@ -102,7 +102,7 @@ namespace CherryMPShared
 
         public PlayerSettings()
         {
-            MasterServerAddress = "https://master.gtanet.work/";
+            MasterServerAddress = "http://62.109.12.213/master";
             FavoriteServers = new List<string>();
             RecentServers = new List<string>();
             ScaleChatWithSafezone = true;

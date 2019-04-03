@@ -44,7 +44,7 @@ namespace CherryMP
             this.pictureBox1.Image = ((System.Drawing.Image)(resources.GetObject("pictureBox1.Image")));
             this.pictureBox1.Location = new System.Drawing.Point(0, 0);
             this.pictureBox1.Name = "pictureBox1";
-            this.pictureBox1.Size = new System.Drawing.Size(649, 466);
+            this.pictureBox1.Size = new System.Drawing.Size(610, 305);
             this.pictureBox1.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
             this.pictureBox1.TabIndex = 0;
             this.pictureBox1.TabStop = false;
@@ -54,9 +54,9 @@ namespace CherryMP
             this.progressBar1.BackColor = System.Drawing.Color.Black;
             this.progressBar1.Dock = System.Windows.Forms.DockStyle.Bottom;
             this.progressBar1.ForeColor = System.Drawing.Color.DarkRed;
-            this.progressBar1.Location = new System.Drawing.Point(0, 456);
+            this.progressBar1.Location = new System.Drawing.Point(0, 295);
             this.progressBar1.Name = "progressBar1";
-            this.progressBar1.Size = new System.Drawing.Size(649, 10);
+            this.progressBar1.Size = new System.Drawing.Size(610, 10);
             this.progressBar1.Style = System.Windows.Forms.ProgressBarStyle.Continuous;
             this.progressBar1.TabIndex = 1;
             this.progressBar1.UseWaitCursor = true;
@@ -66,7 +66,7 @@ namespace CherryMP
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(649, 466);
+            this.ClientSize = new System.Drawing.Size(610, 305);
             this.ControlBox = false;
             this.Controls.Add(this.progressBar1);
             this.Controls.Add(this.pictureBox1);
