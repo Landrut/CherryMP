@@ -9,11 +9,11 @@ namespace CherryMPServer.Managers
 {
     internal class UnoccupiedVehicleManager
     {
-        private const int UPDATE_RATE = 500;
+        private const int UPDATE_RATE = 250;
         private const float SYNC_RANGE = 130;
-        private const float SYNC_RANGE_SQUARED = SYNC_RANGE*SYNC_RANGE;
+        private const float SYNC_RANGE_SQUARED = SYNC_RANGE * SYNC_RANGE;
         private const float DROPOFF = 30;
-        private const float DROPOFF_SQUARED = DROPOFF*DROPOFF;
+        private const float DROPOFF_SQUARED = DROPOFF * DROPOFF;
 
         private long _lastUpdate;
 
@@ -54,11 +54,18 @@ namespace CherryMPServer.Managers
             return players.TrueForAll(c => c.CurrentVehicle != vehicle) && vehicles.All(v => v.Trailer != vehicle.Value) && prop.AttachedTo == null;
         }
 
-        private void Update()
+        //private void Update()
+        //{
+        //    for (var index = Program.ServerInstance.PublicAPI.getAllVehicles().Count - 1; index >= 0; index--)
+        //    {
+        //        UpdateVehicle(Program.ServerInstance.PublicAPI.getAllVehicles()[index].Value, Program.ServerInstance.NetEntityHandler.NetToProp<VehicleProperties>(Program.ServerInstance.PublicAPI.getAllVehicles()[index].Value));
+        //    }
+        //}
+
+        public void Update()
         {
-            for (var index = Program.ServerInstance.PublicAPI.getAllVehicles().Count - 1; index >= 0; index--)
+            foreach (var vehicle in Program.ServerInstance.PublicAPI.getAllVehicles())
             {
-                var vehicle = Program.ServerInstance.PublicAPI.getAllVehicles()[index];
                 UpdateVehicle(vehicle.Value, Program.ServerInstance.NetEntityHandler.NetToProp<VehicleProperties>(vehicle.Value));
             }
         }

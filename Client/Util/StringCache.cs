@@ -53,7 +53,7 @@ namespace CherryMP.Util
                 }
             }
         }
-        
+
         public void Dispose()
         {
             lock (CachedData)

@@ -53,7 +53,7 @@ namespace CherryMPServer
 
                     pair.Value.Position = Vector3.Lerp(pair.Value.PositionMovement.StartVector,
                         pair.Value.PositionMovement.EndVector,
-                        Math.Min(((float) delta) / pair.Value.PositionMovement.Duration, 1f));
+                        Math.Min(((float)delta) / pair.Value.PositionMovement.Duration, 1f));
 
                     if (delta >= pair.Value.PositionMovement.Duration)
                         pair.Value.PositionMovement = null;
@@ -97,13 +97,15 @@ namespace CherryMPServer
         {
             if (_hasWorldBeenCreated) return;
 
-            var obj = new WorldProperties();
-            obj.EntityType = 255;
-            obj.Hours = (byte)DateTime.Now.Hour;
-            obj.Minutes = (byte)DateTime.Now.Minute;
-            obj.Weather = 0;
-            obj.LoadedIpl = new List<string>();
-            obj.RemovedIpl = new List<string>();
+            var obj = new WorldProperties
+            {
+                EntityType = 255,
+                Hours = (byte)DateTime.Now.Hour,
+                Minutes = (byte)DateTime.Now.Minute,
+                Weather = 0,
+                LoadedIpl = new List<string>(),
+                RemovedIpl = new List<string>()
+            };
 
             lock (ServerEntities) ServerEntities.Add(1, obj);
             _hasWorldBeenCreated = true;
@@ -111,19 +113,21 @@ namespace CherryMPServer
 
         public int CreateVehicle(int model, Vector3 pos, Vector3 rot, int color1, int color2, int dimension)
         {
-            var obj = new VehicleProperties();
-            obj.Position = pos;
-            obj.Rotation = rot;
-            obj.ModelHash = model;
-            obj.IsDead = false;
-            obj.Health = 1000;
-            obj.Alpha = 255;
-            obj.Livery = 0;
-            obj.NumberPlate = "CHERRY";
-            obj.EntityType = (byte)EntityType.Vehicle;
-            obj.PrimaryColor = color1;
-            obj.SecondaryColor = color2;
-            obj.Dimension = dimension;
+            var obj = new VehicleProperties
+            {
+                Position = pos,
+                Rotation = rot,
+                ModelHash = model,
+                IsDead = false,
+                Health = 1000,
+                Alpha = 255,
+                Livery = 0,
+                NumberPlate = "Cherry",
+                EntityType = (byte)EntityType.Vehicle,
+                PrimaryColor = color1,
+                SecondaryColor = color2,
+                Dimension = dimension
+            };
 
             if (model == (int)VehicleHash.Taxi)
                 obj.VehicleComponents = 1 << 5;
@@ -142,10 +146,12 @@ namespace CherryMPServer
                 ServerEntities.Add(localEntityHash, obj);
             }
 
-            var packet = new CreateEntity();
-            packet.EntityType = (byte) EntityType.Vehicle;
-            packet.NetHandle = localEntityHash;
-            packet.Properties = obj;
+            var packet = new CreateEntity
+            {
+                EntityType = (byte)EntityType.Vehicle,
+                NetHandle = localEntityHash,
+                Properties = obj
+            };
             Program.ServerInstance.SendToAll(packet, PacketType.CreateEntity, true, ConnectionChannel.NativeCall);
 
             return localEntityHash;
@@ -153,13 +159,15 @@ namespace CherryMPServer
 
         public int CreateProp(int model, Vector3 pos, Vector3 rot, int dimension)
         {
-            var obj = new EntityProperties();
-            obj.Position = pos;
-            obj.Rotation = rot;
-            obj.ModelHash = model;
-            obj.Dimension = dimension;
-            obj.Alpha = 255;
-            obj.EntityType = (byte)EntityType.Prop;
+            var obj = new EntityProperties
+            {
+                Position = pos,
+                Rotation = rot,
+                ModelHash = model,
+                Dimension = dimension,
+                Alpha = 255,
+                EntityType = (byte)EntityType.Prop
+            };
             int localEntityHash;
 
             lock (ServerEntities)
@@ -168,10 +176,12 @@ namespace CherryMPServer
                 ServerEntities.Add(localEntityHash, obj);
             }
 
-            var packet = new CreateEntity();
-            packet.EntityType = (byte)EntityType.Prop;
-            packet.Properties = obj;
-            packet.NetHandle = localEntityHash;
+            var packet = new CreateEntity
+            {
+                EntityType = (byte)EntityType.Prop,
+                Properties = obj,
+                NetHandle = localEntityHash
+            };
 
             Program.ServerInstance.SendToAll(packet, PacketType.CreateEntity, true, ConnectionChannel.NativeCall);
 
@@ -180,13 +190,15 @@ namespace CherryMPServer
 
         public int CreateProp(int model, Vector3 pos, Quaternion rot, int dimension)
         {
-            var obj = new EntityProperties();
-            obj.Position = pos;
-            obj.Rotation = rot;
-            obj.ModelHash = model;
-            obj.Dimension = dimension;
-            obj.Alpha = 255;
-            obj.EntityType = (byte)EntityType.Prop;
+            var obj = new EntityProperties
+            {
+                Position = pos,
+                Rotation = rot,
+                ModelHash = model,
+                Dimension = dimension,
+                Alpha = 255,
+                EntityType = (byte)EntityType.Prop
+            };
 
             int localEntityHash;
             lock (ServerEntities)
@@ -195,10 +207,12 @@ namespace CherryMPServer
                 ServerEntities.Add(localEntityHash, obj);
             }
 
-            var packet = new CreateEntity();
-            packet.EntityType = (byte)EntityType.Prop;
-            packet.Properties = obj;
-            packet.NetHandle = localEntityHash;
+            var packet = new CreateEntity
+            {
+                EntityType = (byte)EntityType.Prop,
+                Properties = obj,
+                NetHandle = localEntityHash
+            };
 
             Program.ServerInstance.SendToAll(packet, PacketType.CreateEntity, true, ConnectionChannel.NativeCall);
 
@@ -208,17 +222,19 @@ namespace CherryMPServer
         public int CreatePickup(int model, Vector3 pos, Vector3 rot, int amount, uint respawnTime, int dimension, int customModel = 0)
         {
             int localEntityHash;
-            var obj = new PickupProperties();
-            obj.Position = pos;
-            obj.Rotation = rot;
-            obj.ModelHash = model;
-            obj.RespawnTime = respawnTime;
-            obj.Amount = amount;
-            obj.Dimension = dimension;
-            obj.Alpha = 255;
-            obj.Flag = 0;
-            obj.CustomModel = customModel;
-            obj.EntityType = (byte)EntityType.Pickup;
+            var obj = new PickupProperties
+            {
+                Position = pos,
+                Rotation = rot,
+                ModelHash = model,
+                RespawnTime = respawnTime,
+                Amount = amount,
+                Dimension = dimension,
+                Alpha = 255,
+                Flag = 0,
+                CustomModel = customModel,
+                EntityType = (byte)EntityType.Pickup
+            };
 
             lock (ServerEntities)
             {
@@ -226,10 +242,12 @@ namespace CherryMPServer
                 ServerEntities.Add(localEntityHash, obj);
             }
 
-            var packet = new CreateEntity();
-            packet.EntityType = (byte)EntityType.Pickup;
-            packet.Properties = obj;
-            packet.NetHandle = localEntityHash;
+            var packet = new CreateEntity
+            {
+                EntityType = (byte)EntityType.Pickup,
+                Properties = obj,
+                NetHandle = localEntityHash
+            };
 
             Program.ServerInstance.SendToAll(packet, PacketType.CreateEntity, true, ConnectionChannel.NativeCall);
 
@@ -241,24 +259,28 @@ namespace CherryMPServer
             if (ent.IsNull || !ent.Exists()) return 0;
 
             int localEntityHash;
-            var obj = new BlipProperties();
-            obj.EntityType = (byte)EntityType.Blip;
-            obj.AttachedNetEntity = ent.Value;
-            obj.Dimension = ServerEntities[ent.Value].Dimension;
-            obj.Position = ServerEntities[ent.Value].Position;
-            obj.Sprite = 0;
-            obj.Alpha = 255;
-            obj.Scale = 1f;
+            var obj = new BlipProperties
+            {
+                EntityType = (byte)EntityType.Blip,
+                AttachedNetEntity = ent.Value,
+                Dimension = ServerEntities[ent.Value].Dimension,
+                Position = ServerEntities[ent.Value].Position,
+                Sprite = 0,
+                Alpha = 255,
+                Scale = 1f
+            };
             lock (ServerEntities)
             {
                 localEntityHash = GetId();
                 ServerEntities.Add(localEntityHash, obj);
             }
 
-            var packet = new CreateEntity();
-            packet.EntityType = (byte)EntityType.Blip;
-            packet.Properties = obj;
-            packet.NetHandle = localEntityHash;
+            var packet = new CreateEntity
+            {
+                EntityType = (byte)EntityType.Blip,
+                Properties = obj,
+                NetHandle = localEntityHash
+            };
 
             Program.ServerInstance.SendToAll(packet, PacketType.CreateEntity, true, ConnectionChannel.NativeCall);
 
@@ -268,24 +290,28 @@ namespace CherryMPServer
         public int CreateBlip(Vector3 pos, int dimension)
         {
             int localEntityHash;
-            var obj = new BlipProperties();
-            obj.EntityType = (byte)EntityType.Blip;
-            obj.Position = pos;
-            obj.Dimension = dimension;
-            obj.Sprite = 0;
-            obj.Scale = 1f;
-            obj.Alpha = 255;
-            obj.AttachedNetEntity = 0;
+            var obj = new BlipProperties
+            {
+                EntityType = (byte)EntityType.Blip,
+                Position = pos,
+                Dimension = dimension,
+                Sprite = 0,
+                Scale = 1f,
+                Alpha = 255,
+                AttachedNetEntity = 0
+            };
             lock (ServerEntities)
             {
                 localEntityHash = GetId();
                 ServerEntities.Add(localEntityHash, obj);
             }
 
-            var packet = new CreateEntity();
-            packet.EntityType = (byte) EntityType.Blip;
-            packet.Properties = obj;
-            packet.NetHandle = localEntityHash;
+            var packet = new CreateEntity
+            {
+                EntityType = (byte)EntityType.Blip,
+                Properties = obj,
+                NetHandle = localEntityHash
+            };
 
             Program.ServerInstance.SendToAll(packet, PacketType.CreateEntity, true, ConnectionChannel.NativeCall);
 
@@ -295,25 +321,29 @@ namespace CherryMPServer
         public int CreateBlip(Vector3 pos, float range, int dimension)
         {
             int localEntityHash;
-            var obj = new BlipProperties();
-            obj.EntityType = (byte)EntityType.Blip;
-            obj.Position = pos;
-            obj.Dimension = dimension;
-            obj.Sprite = 0;
-            obj.Scale = 1f;
-            obj.RangedBlip = range;
-            obj.Alpha = 255;
-            obj.AttachedNetEntity = 0;
+            var obj = new BlipProperties
+            {
+                EntityType = (byte)EntityType.Blip,
+                Position = pos,
+                Dimension = dimension,
+                Sprite = 0,
+                Scale = 1f,
+                RangedBlip = range,
+                Alpha = 255,
+                AttachedNetEntity = 0
+            };
             lock (ServerEntities)
             {
                 localEntityHash = GetId();
                 ServerEntities.Add(localEntityHash, obj);
             }
 
-            var packet = new CreateEntity();
-            packet.EntityType = (byte)EntityType.Blip;
-            packet.Properties = obj;
-            packet.NetHandle = localEntityHash;
+            var packet = new CreateEntity
+            {
+                EntityType = (byte)EntityType.Blip,
+                Properties = obj,
+                NetHandle = localEntityHash
+            };
 
             Program.ServerInstance.SendToAll(packet, PacketType.CreateEntity, true, ConnectionChannel.NativeCall);
 
@@ -345,10 +375,12 @@ namespace CherryMPServer
                 ServerEntities.Add(localEntityHash, obj);
             }
 
-            var packet = new CreateEntity();
-            packet.EntityType = (byte)EntityType.Marker;
-            packet.Properties = obj;
-            packet.NetHandle = localEntityHash;
+            var packet = new CreateEntity
+            {
+                EntityType = (byte)EntityType.Marker,
+                Properties = obj,
+                NetHandle = localEntityHash
+            };
 
             Program.ServerInstance.SendToAll(packet, PacketType.CreateEntity, true, ConnectionChannel.NativeCall);
 
@@ -358,28 +390,32 @@ namespace CherryMPServer
         public int CreateTextLabel(string text, float size, float range, int r, int g, int b, Vector3 pos, bool entitySeethrough, int dimension)
         {
             int localEntityHash;
-            var obj = new TextLabelProperties();
-            obj.EntityType = (byte)EntityType.TextLabel;
-            obj.Position = pos;
-            obj.Size = size;
-            obj.Blue = b;
-            obj.Green = g;
-            obj.Range = range;
-            obj.Red = r;
-            obj.Text = text;
-            obj.Alpha = 255;
-            obj.EntitySeethrough = entitySeethrough;
-            obj.Dimension = dimension;
+            var obj = new TextLabelProperties
+            {
+                EntityType = (byte)EntityType.TextLabel,
+                Position = pos,
+                Size = size,
+                Blue = b,
+                Green = g,
+                Range = range,
+                Red = r,
+                Text = text,
+                Alpha = 255,
+                EntitySeethrough = entitySeethrough,
+                Dimension = dimension
+            };
             lock (ServerEntities)
             {
                 localEntityHash = GetId();
                 ServerEntities.Add(localEntityHash, obj);
             }
 
-            var packet = new CreateEntity();
-            packet.EntityType = (byte)EntityType.TextLabel;
-            packet.Properties = obj;
-            packet.NetHandle = localEntityHash;
+            var packet = new CreateEntity
+            {
+                EntityType = (byte)EntityType.TextLabel,
+                Properties = obj,
+                NetHandle = localEntityHash
+            };
 
             Program.ServerInstance.SendToAll(packet, PacketType.CreateEntity, true, ConnectionChannel.NativeCall);
 
@@ -389,23 +425,27 @@ namespace CherryMPServer
         public int CreateStaticPed(int model, Vector3 pos, float heading, int dimension = 0)
         {
             int localEntityHash;
-            var obj = new PedProperties();
-            obj.EntityType = (byte)EntityType.Ped;
-            obj.Position = pos;
-            obj.Alpha = 255;
-            obj.ModelHash = model;
-            obj.Rotation = new Vector3(0, 0, heading);
-            obj.Dimension = dimension;
+            var obj = new PedProperties
+            {
+                EntityType = (byte)EntityType.Ped,
+                Position = pos,
+                Alpha = 255,
+                ModelHash = model,
+                Rotation = new Vector3(0, 0, heading),
+                Dimension = dimension
+            };
             lock (ServerEntities)
             {
                 localEntityHash = GetId();
                 ServerEntities.Add(localEntityHash, obj);
             }
 
-            var packet = new CreateEntity();
-            packet.EntityType = (byte)EntityType.Ped;
-            packet.Properties = obj;
-            packet.NetHandle = localEntityHash;
+            var packet = new CreateEntity
+            {
+                EntityType = (byte)EntityType.Ped,
+                Properties = obj,
+                NetHandle = localEntityHash
+            };
 
             Program.ServerInstance.SendToAll(packet, PacketType.CreateEntity, true, ConnectionChannel.NativeCall);
 
@@ -415,17 +455,19 @@ namespace CherryMPServer
         public int CreateParticleEffect(string lib, string name, Vector3 pos, Vector3 rot, float scale, int attachedEntity = 0, int boneId = 0, int dimension = 0)
         {
             int localEntityHash;
-            var obj = new ParticleProperties();
-            obj.EntityType = (byte)EntityType.Particle;
-            obj.Position = pos;
-            obj.Rotation = rot;
-            obj.Alpha = 255;
-            obj.Library = lib;
-            obj.Name = name;
-            obj.Scale = scale;
-            obj.EntityAttached = attachedEntity;
-            obj.BoneAttached = boneId;
-            obj.Dimension = dimension;
+            var obj = new ParticleProperties
+            {
+                EntityType = (byte)EntityType.Particle,
+                Position = pos,
+                Rotation = rot,
+                Alpha = 255,
+                Library = lib,
+                Name = name,
+                Scale = scale,
+                EntityAttached = attachedEntity,
+                BoneAttached = boneId,
+                Dimension = dimension
+            };
 
             lock (ServerEntities)
             {
@@ -433,10 +475,12 @@ namespace CherryMPServer
                 ServerEntities.Add(localEntityHash, obj);
             }
 
-            var packet = new CreateEntity();
-            packet.EntityType = (byte)EntityType.Particle;
-            packet.Properties = obj;
-            packet.NetHandle = localEntityHash;
+            var packet = new CreateEntity
+            {
+                EntityType = (byte)EntityType.Particle,
+                Properties = obj,
+                NetHandle = localEntityHash
+            };
 
             Program.ServerInstance.SendToAll(packet, PacketType.CreateEntity, true, ConnectionChannel.NativeCall);
 
@@ -447,9 +491,8 @@ namespace CherryMPServer
         {
             if (!ServerEntities.ContainsKey(netId)) return;
 
-            var packet = new DeleteEntity();
-            packet.NetHandle = netId;
-            Program.ServerInstance.SendToAll(packet, PacketType.DeleteEntity, true, ConnectionChannel.NativeCall);
+            var packet = new DeleteEntity { NetHandle = netId };
+            Program.ServerInstance.SendToAll(packet, PacketType.DeleteEntity, true, ConnectionChannel.EntityBackend);
 
             lock (ServerEntities) ServerEntities.Remove(netId);
         }
@@ -485,8 +528,7 @@ namespace CherryMPServer
     {
         internal static bool Exists(this NetHandle ent)
         {
-            if (ent.IsNull) return false;
-            return Program.ServerInstance.NetEntityHandler.ToDict().ContainsKey(ent.Value);
+            return !ent.IsNull && Program.ServerInstance.NetEntityHandler.ToDict().ContainsKey(ent.Value);
         }
     }
 }

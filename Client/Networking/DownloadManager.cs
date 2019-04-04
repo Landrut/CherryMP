@@ -9,6 +9,7 @@ using GTA.UI;
 using CherryMP.Javascript;
 using CherryMP.Util;
 using CherryMPShared;
+using GTA.Native;
 
 namespace CherryMP.Networking
 {
@@ -41,11 +42,7 @@ namespace CherryMP.Networking
         {
             foreach (var asiMod in Main.GetModules().Where(mod => mod.ModuleName.EndsWith(".asi")))
             {
-                if ((asiMod.ModuleName.ToLower() == "scripthookvdotnet.asi" ||
-                     asiMod.ModuleName.ToLower() == "scripthookv.asi"))
-                {
-                    continue;
-                }
+                if (asiMod.ModuleName.ToLower() == "scripthookvdotnet.asi" || asiMod.ModuleName.ToLower() == "scripthookv.asi") continue;
 
                 if (!whitelist.Contains(HashFile(asiMod.FileName))) return false;
             }
@@ -111,7 +108,7 @@ namespace CherryMP.Networking
                 string hash = myData.Select(byt => byt.ToString("x2")).Aggregate((left, right) => left + right);
 
                 FileIntegrity.Set(path, md5hash);
-                
+
                 if (hash == md5hash)
                 {
                     if (type == FileType.Script)
@@ -130,11 +127,13 @@ namespace CherryMP.Networking
 
         internal static ClientsideScript LoadScript(string file, string resource, string script)
         {
-            var csScript = new ClientsideScript();
+            var csScript = new ClientsideScript
+            {
+                Filename = Path.GetFileNameWithoutExtension(file)?.Replace('.', '_'),
+                ResourceParent = resource,
+                Script = script
+            };
 
-            csScript.Filename = Path.GetFileNameWithoutExtension(file)?.Replace('.', '_');
-            csScript.ResourceParent = resource;
-            csScript.Script = script;
 
             return csScript;
         }
@@ -144,19 +143,45 @@ namespace CherryMP.Networking
             CurrentFile = null;
         }
 
+        public static void LoadingPromptText(string text)
+        {
+            Function.Call((Hash)0xABA17D7CE615ADBF, "STRING"); //_SET_LOADING_PROMPT_TEXT_ENTRY
+            Function.Call((Hash)0x6C188BE134E074AA, text); //ADD_TEXT_COMPONENT_SUBSTRING_PLAYER_NAME
+            Function.Call((Hash)0x10D373323E5B9C0D); //_REMOVE_LOADING_PROMPT
+            Function.Call((Hash)0xBD12F8228410D9B4, 4); //_SHOW_LOADING_PROMPT
+        }
+
+        public static void ShowLoadingPrompt(string text)
+        {
+            Function.Call((Hash)0xABA17D7CE615ADBF, "STRING"); //_SET_LOADING_PROMPT_TEXT_ENTRY
+            Function.Call((Hash)0x6C188BE134E074AA, text); //ADD_TEXT_COMPONENT_SUBSTRING_PLAYER_NAME
+            Function.Call((Hash)0xBD12F8228410D9B4, 4); //_SHOW_LOADING_PROMPT
+        }
+
+        public static void StopLoadingPrompt()
+        {
+            Function.Call((Hash)0x10D373323E5B9C0D); //_REMOVE_LOADING_PROMPT
+        }
+
         internal static void DownloadPart(int id, byte[] bytes)
         {
             if (CurrentFile == null || CurrentFile.Id != id)
             {
                 return;
             }
-            
+
             CurrentFile.Write(bytes);
-            Screen.ShowSubtitle("Downloading " +
-                            ((CurrentFile.Type == FileType.Normal || CurrentFile.Type == FileType.Script)
-                                ? CurrentFile.Filename
-                                : CurrentFile.Type.ToString()) + ": " +
-                            (CurrentFile.DataWritten/(float) CurrentFile.Length).ToString("P"));
+            if (CurrentFile.Type != FileType.EndOfTransfer)
+            {
+                //Main.LoadingPromptText();
+
+                LoadingPromptText("Downloading " +
+                    ((CurrentFile.Type == FileType.Normal || CurrentFile.Type == FileType.Script)
+                        ? CurrentFile.Filename
+                        : CurrentFile.Type.ToString()) + ": " +
+                    (CurrentFile.DataWritten / (float)CurrentFile.Length).ToString("P"));
+            }
+
         }
 
         internal static void End(int id)
@@ -201,21 +226,28 @@ namespace CherryMP.Networking
                 }
                 else if (CurrentFile.Type == FileType.EndOfTransfer)
                 {
-                    if (Main.JustJoinedServer)
+                    try
                     {
-                        World.RenderingCamera = null;
-                        Main.MainMenu.TemporarilyHidden = false;
-                        Main.MainMenu.Visible = false;
-                        Main.JustJoinedServer = false;
+                        if (Main.JustJoinedServer)
+                        {
+                            World.RenderingCamera = null;
+                            Main.MainMenu.TemporarilyHidden = false;
+                            Main.MainMenu.Visible = false;
+                            Main.JustJoinedServer = false;
+                        }
+
+                        List<string> AffectedResources = new List<string>();
+                        AffectedResources.AddRange(PendingScripts.ClientsideScripts.Select(cs => cs.ResourceParent));
+
+                        Main.StartClientsideScripts(PendingScripts);
+                        PendingScripts.ClientsideScripts.Clear();
+
+                        Main.InvokeFinishedDownload(AffectedResources);
                     }
-
-                    List<string> AffectedResources = new List<string>();
-                    AffectedResources.AddRange(PendingScripts.ClientsideScripts.Select(cs => cs.ResourceParent));
-
-                    Main.StartClientsideScripts(PendingScripts);
-                    PendingScripts.ClientsideScripts.Clear();
-
-                    Main.InvokeFinishedDownload(AffectedResources);
+                    catch (Exception e)
+                    {
+                        LogManager.LogException(e, "DownloadManager");
+                    }
                 }
                 else if (CurrentFile.Type == FileType.CustomData)
                 {
@@ -286,15 +318,9 @@ namespace CherryMP.Networking
 
         internal void Write(byte[] data)
         {
-            if (Stream != null)
-            {
-                Stream.Write(data, 0, data.Length);
-            }
+            Stream?.Write(data, 0, data.Length);
 
-            if (Data != null)
-            {
-                Data.AddRange(data);
-            }
+            Data?.AddRange(data);
 
             DataWritten += data.Length;
         }

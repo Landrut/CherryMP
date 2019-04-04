@@ -1478,12 +1478,10 @@ namespace GTANResource
                                 break;
 
                             case NetIncomingMessageType.ConnectionApproval:
-                                if (connBlock.Contains(client.NetConnection.RemoteEndPoint.Address))
-                                {
-                                    client.NetConnection.Deny("Denied access due to suspected connection exploit.");
-                                    continue;
-                                }
-                                if (Conntimeout)
+                        {
+                            if (Conntimeout)
+                            {
+                                lock (queue)
                                 {
                                     if (queue.ContainsKey(client.NetConnection.RemoteEndPoint))
                                     {
@@ -1495,190 +1493,167 @@ namespace GTANResource
                                         queue.Add(client.NetConnection.RemoteEndPoint, DateTime.Now);
                                     }
                                 }
-                                Program.Output("Initiating connection: [" + client.NetConnection.RemoteEndPoint.Address.ToString() + ":" + client.NetConnection.RemoteEndPoint.Port.ToString() + "]");
+                            }
+                            Program.Output("Initiating connection: [" + client.NetConnection.RemoteEndPoint.Address + ":" + client.NetConnection.RemoteEndPoint.Port + "]");
+                            msg.ReadByte();
+                            var leng = msg.ReadInt32();
+                            ConnectionRequest connReq;
+                            try
+                            {
+                                connReq = DeserializeBinary<ConnectionRequest>(msg.ReadBytes(leng)) as ConnectionRequest;
+                            }
+                            catch (EndOfStreamException)
+                            {
+                                continue;
+                            }
 
-                                var type = msg.ReadByte();
-                                var leng = msg.ReadInt32();
-                                ConnectionRequest connReq = null;
-                                try
+                            if (string.IsNullOrWhiteSpace(connReq?.DisplayName) ||
+                                string.IsNullOrWhiteSpace(connReq.SocialClubName) ||
+                                string.IsNullOrWhiteSpace(connReq.ScriptVersion))
+                            {
+                                client.NetConnection.Deny("Outdated version!\nPlease update your client.");
+                                continue;
+                            }
+
+                            var cVersion = ParseableVersion.Parse(connReq.ScriptVersion);
+                            if (cVersion < MinimumClientVersion ||
+                                cVersion < VersionCompatibility.LastCompatibleClientVersion)
+                            {
+                                client.NetConnection.Deny("Outdated version!\nPlease update your client.");
+                                continue;
+                            }
+
+                            if (BanManager.IsClientBanned(client))
+                            {
+                                client.NetConnection.Deny("You are banned from the server.");
+                                continue;
+                            }
+
+                            if (PasswordProtected && !string.IsNullOrWhiteSpace(Password))
+                            {
+                                if (Password != connReq.Password)
                                 {
-                                    connReq = DeserializeBinary<ConnectionRequest>(msg.ReadBytes(leng)) as ConnectionRequest;
-                                }
-                                catch (EndOfStreamException e)
-                                //catch (Exception e)
-                                {
-                                    if (client.NetConnection.RemoteEndPoint != null)
-                                    {
-                                        Program.ToFile("attack.log", "Suspected connection exploit [" + client.NetConnection.RemoteEndPoint.Address.ToString() + "]");
-
-                                        if (LogLevel > 1) Program.Output("[DEBUG]" + e.ToString());
-                                        if (LogLevel > 2) Program.Output("[VERBOSE]" + connReq.ToString());
-                                        //if (!connBlock.Contains(client.NetConnection.RemoteEndPoint.Address)) connBlock.Add(client.NetConnection.RemoteEndPoint.Address);
-
-                                        client.NetConnection.Deny("Denied access due to suspected connection exploit.");
-                                    }
+                                    client.NetConnection.Deny("Wrong password!");
+                                    Program.Output("Player connection refused: wrong password. (" + client.NetConnection.RemoteEndPoint.Address + ")");
                                     continue;
                                 }
+                            }
 
-                                if (connReq == null || string.IsNullOrWhiteSpace(connReq.DisplayName) || string.IsNullOrWhiteSpace(connReq.SocialClubName) || string.IsNullOrWhiteSpace(connReq.ScriptVersion))
+                            lock (Clients)
+                            {
+                                var duplicate = 0;
+                                var displayname = connReq.DisplayName;
+
+                                while (AllowDisplayNames && Clients.Any(c => c.Name == connReq.DisplayName))
                                 {
-                                    client.NetConnection.Deny("Outdated version. Please update your client.");
-                                    continue;
+                                    duplicate++;
+                                    connReq.DisplayName = displayname + " (" + duplicate + ")";
                                 }
+                            }
 
-                                var cVersion = ParseableVersion.Parse(connReq.ScriptVersion);
-                                if (cVersion < MinimumClientVersion || cVersion < VersionCompatibility.LastCompatibleClientVersion)
+                            client.CommitConnection(); //Create PedHandle
+                            client.SocialClubName = connReq.SocialClubName;
+                            client.CEF = connReq.CEF;
+                            client.MediaStream = connReq.MediaStream;
+                            client.Name = AllowDisplayNames ? connReq.DisplayName : connReq.SocialClubName;
+                            client.RemoteScriptVersion = ParseableVersion.Parse(connReq.ScriptVersion);
+                            client.GameVersion = connReq.GameVersion;
+                            //client.ConnectionConfirmed = false;
+                            ((PlayerProperties)NetEntityHandler.ToDict()[client.handle.Value]).Name = client.Name;
+
+                            if (!AllowCEFDevTool && connReq.CEFDevtool)
+                            {
+                                client.NetConnection.Deny("CEF DevTool is not allowed.");
+                                Program.Output("Player connection refused: CEF Devtool enabled. (" + client.NetConnection.RemoteEndPoint.Address + ")");
+                                continue;
+                            }
+
+                            var respObj = new ConnectionResponse
+                            {
+                                ServerVersion = serverVersion.ToString(),
+                                CharacterHandle = client.handle.Value,
+                                Settings = new SharedSettings
                                 {
-                                    client.NetConnection.Deny("Outdated version. Please update your client.");
-                                    continue;
-                                }
-
-                                if (BanManager.IsClientBanned(client))
-                                {
-                                    client.NetConnection.Deny("You are banned.");
-                                    continue;
-                                }
-
-                                //int clients = 0;
-                                //lock (Clients) clients = Clients.Count;
-                                //if (clients <= MaxPlayers) //Useless, it is checked in Lidgren.
-                                //{
-                                if (PasswordProtected && !string.IsNullOrWhiteSpace(Password))
-                                {
-                                    if (Password != connReq.Password)
-                                    {
-                                        client.NetConnection.Deny("Wrong password.");
-                                        Program.Output("Player connection refused: wrong password. (" + client.NetConnection.RemoteEndPoint.Address.ToString() + ")");
-                                        continue;
-                                    }
-                                }
-
-                                lock (Clients)
-                                {
-                                    int duplicate = 0;
-                                    string displayname = connReq.DisplayName;
-
-                                    //REWORK NEEDED
-                                    //if (Clients.Any(c => c.SocialClubName == connReq.SocialClubName))
-                                    //{
-                                    //    client.NetConnection.Deny("Duplicate RGSC handle.");
-                                    //    Program.Output("Player connection refused: duplicate RGSC. (" + client.NetConnection.RemoteEndPoint.Address.ToString() + ")");
-                                    //    continue;
-                                    //}
-
-                                    while (AllowDisplayNames && Clients.Any(c => c.Name == connReq.DisplayName))
-                                    {
-                                        duplicate++;
-                                        connReq.DisplayName = displayname + " (" + duplicate + ")";
-                                    }
-                                }
-
-                                client.CommitConnection();
-                                client.SocialClubName = connReq.SocialClubName;
-                                client.CEF = connReq.CEF;
-                                client.MediaStream = connReq.MediaStream;
-                                client.Name = AllowDisplayNames ? connReq.DisplayName : connReq.SocialClubName;
-                                client.RemoteScriptVersion = ParseableVersion.Parse(connReq.ScriptVersion);
-                                client.GameVersion = connReq.GameVersion;
-                                ((PlayerProperties)NetEntityHandler.ToDict()[client.handle.Value]).Name = client.Name;
-
-                                if (!AllowCEFDevTool && connReq.CEFDevtool)
-                                {
-                                    client.NetConnection.Deny("CEF DevTool is not allowed.");
-                                    Program.Output("Player connection refused: CEF Devtool enabled. (" + client.NetConnection.RemoteEndPoint.Address.ToString() + ")");
-                                    continue;
-                                }
-
-                                var respObj = new ConnectionResponse();
-
-                                respObj.ServerVersion = serverVersion.ToString();
-                                respObj.CharacterHandle = client.handle.Value;
-                                respObj.Settings = new SharedSettings()
-                                {
-                                    OnFootLagCompensation = OnFootLagComp,
-                                    VehicleLagCompensation = VehLagComp,
-                                    GlobalStreamingRange = GlobalStreamingRange,
-                                    PlayerStreamingRange = PlayerStreamingRange,
-                                    VehicleStreamingRange = VehicleStreamingRange,
                                     ModWhitelist = ModWhitelist,
                                     UseHttpServer = UseHTTPFileServer,
-                                };
-
-                                var channelHail = Server.CreateMessage();
-                                var respBin = SerializeBinary(respObj);
-
-                                channelHail.Write(respBin.Length);
-                                channelHail.Write(respBin);
-
-                                var cancelArgs = new CancelEventArgs();
-
-                                lock (RunningResources)
-                                    RunningResources.ForEach(
-                                        fs => fs.Engines.ForEach(en => en.InvokePlayerBeginConnect(client, cancelArgs)));
-
-                                if (cancelArgs.Cancel)
-                                {
-                                    client.NetConnection.Deny(cancelArgs.Reason ?? "");
-                                    Program.Output("Connection denied: " + client.SocialClubName + " (" + client.Name + ") [" + client.NetConnection.RemoteEndPoint.Address.ToString() + "]");
-                                    continue;
                                 }
-                                else
-                                {
-                                    Clients.Add(client);
-                                    Server.Configuration.CurrentPlayers = Clients.Count;
-                                    client.NetConnection.Approve(channelHail);
-                                    Program.Output("Processing connection: " + client.SocialClubName + " (" + client.Name + ") [" + client.NetConnection.RemoteEndPoint.Address.ToString() + "]");
+                            };
 
-                                }
-                                //   }
-                                //   else //Unreachable code
-                                //   {
-                                //       client.NetConnection.Deny("Server is full");
-                                //       Program.Output("Player connection refused: server full. (" + client.NetConnection.RemoteEndPoint.Address.ToString() + ")");
-                                //       continue;
-                                //   }
-                                break;
+                            var channelHail = Server.CreateMessage();
+                            var respBin = SerializeBinary(respObj);
+
+                            channelHail.Write(respBin.Length);
+                            channelHail.Write(respBin);
+
+                            var cancelArgs = new CancelEventArgs();
+
+                            lock (RunningResources)
+                            {
+                                RunningResources.ForEach(fs => fs.Engines.ForEach(en => en.InvokePlayerBeginConnect(client, cancelArgs)));
+                            }
+
+                            Clients.Add(client);
+                            Server.Configuration.CurrentPlayers = Clients.Count;
+                            client.NetConnection.Approve(channelHail);
+
+                            Program.Output("Processing connection: " + client.SocialClubName + " (" + client.Name + ") [" + client.NetConnection.RemoteEndPoint.Address + "]");
+                        }
+                            break;
+
                             case NetIncomingMessageType.StatusChanged:
-                                var newStatus = (NetConnectionStatus)msg.ReadByte();
+                                {
 
-                                if (newStatus == NetConnectionStatus.Connected)
-                                {
-                                }
-                                else if (newStatus == NetConnectionStatus.Disconnected)
-                                {
-                                    var reason = msg.ReadString();
-                                    if (Clients.Contains(client))
+                                    var newStatus = (NetConnectionStatus)msg.ReadByte();
+
+                                    switch (newStatus)
                                     {
-                                        lock (RunningResources)
-                                            RunningResources.ForEach(fs => fs.Engines.ForEach(en =>
+                                        case NetConnectionStatus.Connected:
+
+                                            break;
+
+                                        case NetConnectionStatus.Disconnected:
                                             {
-                                                en.InvokePlayerDisconnected(client, reason);
-                                            }));
+                                                var reason = msg.ReadString();
+                                                if (Clients.Contains(client))
+                                                {
+                                                    lock (RunningResources)
+                                                    {
+                                                        RunningResources.ForEach(fs => fs.Engines.ForEach(en =>
+                                                        {
+                                                            en.InvokePlayerDisconnected(client, reason);
+                                                        }));
+                                                    }
 
-                                        UnoccupiedVehicleManager.UnsyncAllFrom(client);
+                                                    UnoccupiedVehicleManager.UnsyncAllFrom(client);
 
-                                        lock (Clients)
-                                        {
-                                            var dcObj = new PlayerDisconnect()
-                                            {
-                                                Id = client.handle.Value,
-                                            };
+                                                    lock (Clients)
+                                                    {
+                                                        var dcObj = new PlayerDisconnect() { Id = client.handle.Value };
 
-                                            SendToAll(dcObj, PacketType.PlayerDisconnect, true, ConnectionChannel.EntityBackend);
+                                                        SendToAll(dcObj, PacketType.PlayerDisconnect, true, ConnectionChannel.SyncEvent);
 
-                                            Program.Output("Player disconnected: " + client.SocialClubName + " (" +
-                                                            client.Name + ") [" + client.NetConnection.RemoteEndPoint.Address.ToString() + "], reason: " + reason);
+                                                        Program.Output("Player disconnected: " + client.SocialClubName + " (" +
+                                                                       client.Name + ") [" +
+                                                                       client.NetConnection.RemoteEndPoint.Address + "], reason: " +
+                                                                       reason);
 
-                                            if (client.CurrentVehicle.Value != 0 && VehicleOccupants.ContainsKey(client.CurrentVehicle.Value) && VehicleOccupants[client.CurrentVehicle.Value].Contains(client))
-                                                VehicleOccupants[client.CurrentVehicle.Value].Remove(client);
+                                                        int vehValue = client.CurrentVehicle.Value;
 
-                                            Clients.Remove(client);
-                                            Server.Configuration.CurrentPlayers = Clients.Count;
-                                            NetEntityHandler.DeleteEntityQuiet(client.handle.Value);
-                                            if (ACLEnabled) ACL.LogOutClient(client);
+                                                        if (vehValue != 0 &&
+                                                            VehicleOccupants.ContainsKey(vehValue) &&
+                                                            VehicleOccupants[vehValue].Contains(client))
+                                                            VehicleOccupants[vehValue].Remove(client);
 
-                                            Downloads.RemoveAll(d => d.Parent == client);
-                                        }
+                                                        Clients.Remove(client);
+                                                        Server.Configuration.CurrentPlayers = Clients.Count;
+                                                        NetEntityHandler.DeleteEntityQuiet(client.handle.Value);
+                                                        if (ACLEnabled) ACL.LogOutClient(client);
+
+                                                        Downloads.RemoveAll(d => d.Parent == client);
+                                                    }
+                                                }
+                                                break;
+                                            }
                                     }
                                 }
                                 break;
@@ -2956,20 +2931,20 @@ namespace GTANResource
 
             UnoccupiedVehicleManager.Pulse();
 
-            lock (RunningResources) RunningResources.ForEach(fs => fs.Engines.ForEach(en =>
-            {
-                en.InvokeUpdate();
-            }));
-
             lock (RunningResources)
             {
+                //RunningResources.ForEach(fs => fs.Engines.ForEach(en => { en.InvokeUpdate(); }));
+
                 for (int i = RunningResources.Count - 1; i >= 0; i--)
                 {
-                    if (RunningResources[i].Engines.Any(en => en.HasTerminated))
+                    for (int j = RunningResources[i].Engines.Count - 1; j >= 0; j--)
                     {
-                        Program.Output("TERMINATING RESOURCE " + RunningResources[i].DirectoryName + " BECAUSE AN ENGINE HAS BEEN TERMINATED.");
-                        RunningResources.RemoveAt(i);
+                        RunningResources[i].Engines[j].InvokeUpdate();
                     }
+
+                    if (!RunningResources[i].Engines.Any(en => en.HasTerminated)) continue;
+                    Program.Output("TERMINATING RESOURCE " + RunningResources[i].DirectoryName + " BECAUSE AN ENGINE HAS BEEN TERMINATED.");
+                    RunningResources.RemoveAt(i);
                 }
             }
             lock (queue)
@@ -3004,118 +2979,129 @@ namespace GTANResource
         {
             var args = DecodeArgumentList(data.Arguments?.ToArray()).ToList();
 
-            switch ((SyncEventType) data.EventType)
+            switch ((SyncEventType)data.EventType)
             {
                 case SyncEventType.DoorStateChange:
-                {
-                    var doorId = (int) args[1];
-                    var newFloat = (bool) args[2];
-                    if (NetEntityHandler.ToDict().ContainsKey((int) args[0]))
                     {
-                        if (newFloat)
-                            ((VehicleProperties) NetEntityHandler.ToDict()[(int) args[0]]).Doors |= (byte)(1 << doorId);
-                        else
-                            ((VehicleProperties)NetEntityHandler.ToDict()[(int)args[0]]).Doors &= (byte)(~(1 << doorId));
-                    }
-                }
-                    break;
-                case SyncEventType.TrailerDeTach:
-                {
-                    var newState = (bool) args[0];
-                    if (!newState)
-                    {
-                        if (NetEntityHandler.ToDict().ContainsKey((int) args[1]))
+                        var doorId = (int)args[1];
+                        var newFloat = (bool)args[2];
+                        if (NetEntityHandler.ToDict().ContainsKey((int)args[0]))
                         {
-                            if (
-                                NetEntityHandler.ToDict()
-                                    .ContainsKey((NetEntityHandler.NetToProp<VehicleProperties>((int) args[1])).Trailer))
-                                ((VehicleProperties)
-                                    NetEntityHandler.ToDict()[
-                                        NetEntityHandler.NetToProp<VehicleProperties>((int) args[1]).Trailer])
-                                    .TraileredBy = 0;
-
-                            ((VehicleProperties) NetEntityHandler.ToDict()[(int) args[1]]).Trailer = 0;
+                            if (newFloat)
+                                ((VehicleProperties)NetEntityHandler.ToDict()[(int)args[0]]).Doors |= (byte)(1 << doorId);
+                            else
+                                ((VehicleProperties)NetEntityHandler.ToDict()[(int)args[0]]).Doors &= (byte)(~(1 << doorId));
                         }
                     }
-                    else
+                    break;
+                case SyncEventType.TrailerDeTach:
                     {
-                        if (NetEntityHandler.ToDict().ContainsKey((int)args[1]))
-                            ((VehicleProperties)NetEntityHandler.ToDict()[(int)args[1]]).Trailer = (int)args[2];
-
-                        if (NetEntityHandler.ToDict().ContainsKey((int)args[2]))
-                            ((VehicleProperties)NetEntityHandler.ToDict()[(int)args[2]]).TraileredBy = (int)args[1];
-                    }
-
-                    lock (RunningResources)
-                        RunningResources.ForEach(
-                            fs => fs.Engines.ForEach(en =>
-                            {
-                                en.InvokeVehicleTrailerChange(new NetHandle((int)args[1]), (bool)args[0] ? new NetHandle((int)args[2]) : new NetHandle());
-                            }));
-                        break;
-                }
-                case SyncEventType.TireBurst:
-                {
-                    var veh = (int)args[0];
-                    var tireId = (int)args[1];
-                    var isBursted = (bool)args[2];
-                    if (NetEntityHandler.ToDict().ContainsKey(veh))
-                    {
-                        var oldValue = (((VehicleProperties) NetEntityHandler.ToDict()[(int) args[0]]).Tires &
-                                        (byte) (1 << tireId)) != 0;
-
-                        if (isBursted)
-                            ((VehicleProperties)NetEntityHandler.ToDict()[(int)args[0]]).Tires |= (byte)(1 << tireId);
-                        else
-                            ((VehicleProperties)NetEntityHandler.ToDict()[(int)args[0]]).Tires &= (byte)(~(1 << tireId));
-
-                        if (oldValue ^ isBursted)
+                        var newState = (bool)args[0];
+                        if (!newState)
                         {
-                            lock (RunningResources)
+                            if (NetEntityHandler.ToDict().ContainsKey((int)args[1]))
+                            {
+                                if (
+                                    NetEntityHandler.ToDict()
+                                        .ContainsKey((NetEntityHandler.NetToProp<VehicleProperties>((int)args[1])).Trailer))
+                                    ((VehicleProperties)
+                                        NetEntityHandler.ToDict()[
+                                            NetEntityHandler.NetToProp<VehicleProperties>((int)args[1]).Trailer])
+                                        .TraileredBy = 0;
+
+                                ((VehicleProperties)NetEntityHandler.ToDict()[(int)args[1]]).Trailer = 0;
+                            }
+                        }
+                        else
+                        {
+                            if (NetEntityHandler.ToDict().ContainsKey((int)args[1]))
+                                ((VehicleProperties)NetEntityHandler.ToDict()[(int)args[1]]).Trailer = (int)args[2];
+
+                            if (NetEntityHandler.ToDict().ContainsKey((int)args[2]))
+                                ((VehicleProperties)NetEntityHandler.ToDict()[(int)args[2]]).TraileredBy = (int)args[1];
+                        }
+
+                        lock (RunningResources)
                             RunningResources.ForEach(
                                 fs => fs.Engines.ForEach(en =>
                                 {
-                                    en.InvokeVehicleTyreBurst(new NetHandle((int) args[0]), tireId);
+                                    en.InvokeVehicleTrailerChange(new NetHandle((int)args[1]), (bool)args[0] ? new NetHandle((int)args[2]) : new NetHandle());
                                 }));
-                        }
+                        break;
                     }
-                    break;
-                }
-                case SyncEventType.PickupPickedUp:
-                {
-                    var pickupId = (int) args[0];
-
-                    if (NetEntityHandler.ToDict().ContainsKey(pickupId))
+                case SyncEventType.TireBurst:
                     {
-                        if (!((PickupProperties) NetEntityHandler.ToDict()[pickupId]).PickedUp)
+                        var veh = (int)args[0];
+                        var tireId = (int)args[1];
+                        var isBursted = (bool)args[2];
+                        if (NetEntityHandler.ToDict().ContainsKey(veh))
                         {
-                            ((PickupProperties) NetEntityHandler.ToDict()[pickupId]).PickedUp = true;
-                            RunningResources.ForEach(res => res.Engines.ForEach(en => en.InvokePlayerPickup(sender, new NetHandle(pickupId))));
-                            if (((PickupProperties)NetEntityHandler.ToDict()[pickupId]).RespawnTime > 0)
-                                PickupManager.Add(pickupId);
+                            var oldValue = (((VehicleProperties)NetEntityHandler.ToDict()[(int)args[0]]).Tires &
+                                            (byte)(1 << tireId)) != 0;
 
-                            if (
-                                PickupToWeapon.Translate(
-                                    ((PickupProperties) NetEntityHandler.ToDict()[pickupId]).ModelHash) != 0)
+                            if (isBursted)
+                                ((VehicleProperties)NetEntityHandler.ToDict()[(int)args[0]]).Tires |= (byte)(1 << tireId);
+                            else
+                                ((VehicleProperties)NetEntityHandler.ToDict()[(int)args[0]]).Tires &= (byte)(~(1 << tireId));
+
+                            if (oldValue ^ isBursted)
                             {
-                                sender.Weapons.Add((WeaponHash) PickupToWeapon.Translate(((PickupProperties)NetEntityHandler.ToDict()[pickupId]).ModelHash), 0);
+                                lock (RunningResources)
+                                    RunningResources.ForEach(
+                                        fs => fs.Engines.ForEach(en =>
+                                        {
+                                            en.InvokeVehicleTyreBurst(new NetHandle((int)args[0]), tireId);
+                                        }));
                             }
                         }
+                        break;
                     }
-                    break;
-                }
-                case SyncEventType.StickyBombDetonation:
-                {
-                    var playerId = (int) args[0];
-                    var c = PublicAPI.getPlayerFromHandle(new NetHandle(playerId));
+                case SyncEventType.PickupPickedUp:
+                    {
+                        var pickupId = (int)args[0];
 
-                    lock (RunningResources)
+                        if (NetEntityHandler.ToDict().ContainsKey(pickupId))
+                        {
+                            if (!((PickupProperties)NetEntityHandler.ToDict()[pickupId]).PickedUp)
+                            {
+                                ((PickupProperties)NetEntityHandler.ToDict()[pickupId]).PickedUp = true;
+                                lock (RunningResources)
+                                {
+                                    RunningResources.ForEach(res => res.Engines.ForEach(en => en.InvokePlayerPickup(sender, new NetHandle(pickupId))));
+                                }
+                                if (((PickupProperties)NetEntityHandler.ToDict()[pickupId]).RespawnTime > 0)
+                                    PickupManager.Add(pickupId);
+
+                                if (
+                                    PickupToWeapon.Translate(
+                                        ((PickupProperties)NetEntityHandler.ToDict()[pickupId]).ModelHash) != 0)
+                                {
+                                    var wh = (WeaponHash)PickupToWeapon.Translate(((PickupProperties)NetEntityHandler.ToDict()[pickupId]).ModelHash);
+                                    if (!sender.Weapons.ContainsKey(wh))
+                                    {
+                                        sender.Weapons.Add(wh, ((PickupProperties)NetEntityHandler.ToDict()[pickupId]).Amount);
+                                    }
+                                    else
+                                    {
+                                        PublicAPI.setPlayerWeaponAmmo(sender, wh, sender.getWeaponAmmo(wh) + ((PickupProperties)NetEntityHandler.ToDict()[pickupId]).Amount);
+                                    }
+                                }
+                            }
+                        }
+                        break;
+                    }
+                case SyncEventType.StickyBombDetonation:
+                    {
+                        var playerId = (int)args[0];
+                        var c = PublicAPI.getPlayerFromHandle(new NetHandle(playerId));
+
+                        lock (RunningResources)
                             RunningResources.ForEach(
                                 fs => fs.Engines.ForEach(en =>
                                 {
                                     en.InvokePlayerDetonateStickies(c);
                                 }));
-                }
+                    }
                     break;
             }
         }

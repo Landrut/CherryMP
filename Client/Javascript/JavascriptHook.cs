@@ -156,11 +156,19 @@ namespace CherryMP.Javascript
         {
             ThreadJumper.Add(() =>
             {
-                lock (ScriptEngines) ScriptEngines.ForEach(en =>
-                {
-                    if (resource != "*" && en.ResourceParent != resource) return;
-                    en.Engine.Script.API.invokeServerEvent(eventName, arguments);
-                });
+                lock (ScriptEngines)
+                    for (int i = 0; i < ScriptEngines.Count; i++)
+                    {
+                        try
+                        {
+                            if (resource != "*" && ScriptEngines[i].ResourceParent != resource) continue;
+                            ScriptEngines[i].Engine.Script.API.invokeServerEvent(eventName, arguments);
+                        }
+                        catch (Exception ex)
+                        {
+                            LogException(ex);
+                        }
+                    }
             });
         }
 
@@ -173,14 +181,20 @@ namespace CherryMP.Javascript
                 {
                     lock (ScriptEngines)
                     {
-                        ScriptEngines.ForEach(en => en.Engine.Script.API.invokeChatCommand(msg));
+                        for (var index = ScriptEngines.Count - 1; index >= 0; index--)
+                        {
+                            ScriptEngines[index].Engine.Script.API.invokeChatCommand(msg);
+                        }
                     }
                 }
                 else
                 {
                     lock (ScriptEngines)
                     {
-                        ScriptEngines.ForEach(en => en.Engine.Script.API.invokeChatMessage(msg));
+                        for (var index = 0; index < ScriptEngines.Count; index++)
+                        {
+                            ScriptEngines[index].Engine.Script.API.invokeChatMessage(msg);
+                        }
                     }
                 }
             });
@@ -192,7 +206,10 @@ namespace CherryMP.Javascript
             {
                 lock (ScriptEngines)
                 {
-                    ScriptEngines.ForEach(en => func(en.Engine.Script.API));
+                    for (var index = ScriptEngines.Count - 1; index >= 0; index--)
+                    {
+                        func(ScriptEngines[index].Engine.Script.API);
+                    }
                 }
             });
         }
@@ -203,7 +220,10 @@ namespace CherryMP.Javascript
             {
                 lock (ScriptEngines)
                 {
-                    ScriptEngines.ForEach(en => en.Engine.Script.API.invokeEntityStreamIn(handle, type));
+                    for (var index = 0; index < ScriptEngines.Count; index++)
+                    {
+                        ScriptEngines[index].Engine.Script.API.invokeEntityStreamIn(handle, type);
+                    }
                 }
             });
         }
@@ -214,7 +234,10 @@ namespace CherryMP.Javascript
             {
                 lock (ScriptEngines)
                 {
-                    ScriptEngines.ForEach(en => en.Engine.Script.API.invokeEntityStreamOut(handle, type));
+                    for (var index = 0; index < ScriptEngines.Count; index++)
+                    {
+                        ScriptEngines[index].Engine.Script.API.invokeEntityStreamOut(handle, type);
+                    }
                 }
             });
         }
@@ -225,7 +248,10 @@ namespace CherryMP.Javascript
             {
                 lock (ScriptEngines)
                 {
-                    ScriptEngines.ForEach(en => en.Engine.Script.API.invokeEntityDataChange(handle, key, oldValue));
+                    for (var index = 0; index < ScriptEngines.Count; index++)
+                    {
+                        ScriptEngines[index].Engine.Script.API.invokeEntityDataChange(handle, key, oldValue);
+                    }
                 }
             });
         }
@@ -237,137 +263,127 @@ namespace CherryMP.Javascript
                 lock (ScriptEngines)
                 {
                     foreach (var res in ScriptEngines.Where(en => en.ResourceParent == resource))
+                    {
                         res.Engine.Script.API.invokeCustomDataReceived(data);
+                    }
                 }
             });
         }
 
-        internal void OnTick(object sender, EventArgs e)
+        internal static void OnTick(object sender, EventArgs e)
         {
             var tmpList = new List<Action>(ThreadJumper);
             ThreadJumper.Clear();
-
-            foreach (var a in tmpList)
+            try
             {
-                try
+                for (var i = 0; i < tmpList.Count; i++)
                 {
-                    a.Invoke();
+                    tmpList[i].Invoke();
                 }
-                catch (Exception ex)
-                {
-                    LogException(ex);
-                }
-            }
 
-            lock (ScriptEngines)
-            {
-                foreach (var engine in ScriptEngines)
+                lock (ScriptEngines)
                 {
-                    try
+                    for (var i = 0; i < ScriptEngines.Count; i++)
                     {
-                        engine.Engine.Script.API.invokeUpdate();
-                    }
-                    catch (Exception ex)
-                    {
-                        LogException(ex);
-                    }
-
-                    try
-                    {
-                        engine.Engine.Script.API.processCoroutines();
-                    }
-                    catch (Exception ex)
-                    {
-                        LogException(ex);
+                        ScriptEngines[i].Engine.Script.API.invokeUpdate();
+                        ScriptEngines[i].Engine.Script.API.processCoroutines();
                     }
                 }
             }
-
+            catch (Exception ex)
+            {
+                LogException(ex);
+            }
         }
 
-        internal void OnKeyDown(object sender, KeyEventArgs e)
+        internal static void OnKeyDown(object sender, KeyEventArgs e)
         {
             if (Main.Chat == null || Main.Chat.IsFocused || Main.MainMenu.Visible) return;
 
             lock (ScriptEngines)
             {
-                foreach (var engine in ScriptEngines)
+                for (var i = 0; i < ScriptEngines.Count; i++)
                 {
-                    try
-                    {
-                        engine.Engine.Script.API.invokeKeyDown(sender, e);
-                    }
-                    catch (ScriptEngineException ex)
-                    {
-                        LogException(ex);
-                    }
+                    //try
+                    //{
+                    ScriptEngines[i].Engine.Script.API.invokeKeyDown(sender, e);
+                    //}
+                    //catch (ScriptEngineException ex)
+                    //{
+                    //    LogException(ex);
+                    //}
                 }
             }
         }
 
-        internal void OnKeyUp(object sender, KeyEventArgs e)
+        internal static void OnKeyUp(object sender, KeyEventArgs e)
         {
             if (Main.Chat == null || Main.Chat.IsFocused) return;
 
             lock (ScriptEngines)
             {
-                foreach (var engine in ScriptEngines)
+                for (var i = 0; i < ScriptEngines.Count; i++)
                 {
-                    try
-                    {
-                        engine.Engine.Script.API.invokeKeyUp(sender, e);
-                    }
-                    catch (ScriptEngineException ex)
-                    {
-                        LogException(ex);
-                    }
+                    //try
+                    //{
+                    ScriptEngines[i].Engine.Script.API.invokeKeyUp(sender, e);
+                    //}
+                    //catch (ScriptEngineException ex)
+                    //{
+                    //    LogException(ex);
+                    //}
                 }
             }
         }
 
         internal static void StartScripts(ScriptCollection sc)
         {
-            var localSc = new List<ClientsideScript>(sc.ClientsideScripts);
-
-            ThreadJumper.Add(() =>
+            try
             {
-                List<ClientsideScriptWrapper> scripts = localSc.Select(StartScript).ToList();
+                var localSc = new List<ClientsideScript>(sc.ClientsideScripts);
 
-                var exportedDict = Exported as IDictionary<string, object>;
-
-                foreach (var group in scripts.GroupBy(css => css.ResourceParent))
+                ThreadJumper.Add(() =>
                 {
-                    dynamic thisRes = new ExpandoObject();
-                    var thisResDict = thisRes as IDictionary<string, object>;
+                    var scripts = localSc.Select(StartScript).ToList();
 
-                    foreach (var compiledResources in group)
+                    var exportedDict = Exported as IDictionary<string, object>;
+
+                    foreach (var group in scripts.GroupBy(css => css.ResourceParent))
                     {
-                        thisResDict.Add(compiledResources.Filename, compiledResources.Engine.Script);
+                        dynamic thisRes = new ExpandoObject();
+                        var thisResDict = (IDictionary<string, object>)thisRes;
+
+                        foreach (var compiledResources in group)
+                        {
+                            thisResDict.Add(compiledResources.Filename, compiledResources.Engine.Script);
+                        }
+
+                        foreach (var wrapper in group)
+                        {
+                            wrapper.Engine.AddHostObject("resource", thisRes);
+                        }
+
+                        exportedDict.Add(group.Key, thisRes);
                     }
 
-                    foreach (var wrapper in group)
+                    for (var index = scripts.Count - 1; index >= 0; index--)
                     {
-                        wrapper.Engine.AddHostObject("resource", thisRes);
+                        var cr = scripts[index];
+                        cr.Engine.AddHostObject("exported", Exported);
+                        cr.Engine.Script.API.invokeResourceStart();
                     }
-
-                    exportedDict.Add(group.Key, thisRes);
-                }
-
-                foreach (var cr in scripts)
-                {
-                    cr.Engine.AddHostObject("exported", Exported);
-
-                    cr.Engine.Script.API.invokeResourceStart();
-                }
-            });
+                });
+            }
+            catch (Exception e)
+            {
+                LogException(e);
+            }
         }
 
         internal static ClientsideScriptWrapper StartScript(ClientsideScript script)
         {
-            ClientsideScriptWrapper csWrapper = null;
-            
-            
-            var scriptEngine = new V8ScriptEngine();
+            ClientsideScriptWrapper csWrapper;
+            var scriptEngine = new V8ScriptEngine(V8ScriptEngineFlags.EnableDebugging);
             //scriptEngine.AddHostObject("host", new HostFunctions()); // Disable an exploit where you could get reflection
             scriptEngine.AddHostObject("API", new ScriptContext(scriptEngine));
             scriptEngine.AddHostType("Enumerable", typeof(Enumerable));
@@ -396,7 +412,7 @@ namespace CherryMP.Javascript
                 scriptEngine.Execute(script.Script);
                 scriptEngine.Script.API.ParentResourceName = script.ResourceParent;
             }
-            catch (ScriptEngineException ex)
+            catch (Exception ex)
             {
                 LogException(ex);
             }
@@ -405,52 +421,66 @@ namespace CherryMP.Javascript
                 csWrapper = new ClientsideScriptWrapper(scriptEngine, script.ResourceParent, script.Filename);
                 lock (ScriptEngines) ScriptEngines.Add(csWrapper);
             }
-    
             return csWrapper;
         }
 
         internal static void StopAllScripts()
         {
-            for (int i = ScriptEngines.Count - 1; i >= 0; i--)
+            try
             {
-                ScriptEngines[i].Engine.Script.API.isDisposing = true;
-            }
-
-            foreach (var engine in ScriptEngines)
-            {
-                engine.Engine.Interrupt();
-                engine.Engine.Script.API.invokeResourceStop();
-                engine.Engine.Dispose();
-            }
-
-            ScriptEngines.Clear();
-            AudioDevice?.Stop();
-            AudioDevice?.Dispose();
-            AudioReader?.Dispose();
-            AudioDevice = null;
-            AudioReader = null;
-            Exported = new ExpandoObject();
-
-            lock (CEFManager.Browsers)
-            {
-                foreach (var browser in CEFManager.Browsers)
+                lock (ScriptEngines)
                 {
-                    browser.Close();
-                    browser.Dispose();
+                    foreach (var t in ScriptEngines)
+                    {
+                        t.Engine.Script.API.isDisposing = true;
+                    }
                 }
 
-                CEFManager.Browsers.Clear();
+                lock (ScriptEngines)
+                {
+                    foreach (var t in ScriptEngines)
+                    {
+                        t.Engine.Interrupt();
+                        t.Engine.Script.API.invokeResourceStop();
+                        t.Engine.Dispose();
+                    }
+                    ScriptEngines.Clear();
+                }
+
+                AudioDevice?.Stop();
+                AudioDevice?.Dispose();
+                AudioReader?.Dispose();
+                AudioDevice = null;
+                AudioReader = null;
+                Exported = new ExpandoObject();
+
+                lock (CEFManager.Browsers)
+                {
+                    foreach (var t in CEFManager.Browsers)
+                    {
+                        t.Close();
+                        t.Dispose();
+                    }
+
+                    CEFManager.Browsers.Clear();
+                }
+            }
+            catch (Exception ex)
+            {
+                LogException(ex);
             }
         }
 
         internal static void StopScript(string resourceName)
         {
             lock (ScriptEngines)
-                for (int i = ScriptEngines.Count - 1; i >= 0; i--)
+            {
+                for (int i = 0; i < ScriptEngines.Count; i++)
                 {
                     if (ScriptEngines[i].ResourceParent != resourceName) continue;
                     ScriptEngines[i].Engine.Script.API.isDisposing = true;
                 }
+            }
 
             var dict = Exported as IDictionary<string, object>;
             dict.Remove(resourceName);
@@ -458,13 +488,16 @@ namespace CherryMP.Javascript
             ThreadJumper.Add(delegate
             {
                 lock (ScriptEngines)
-                    for (int i = ScriptEngines.Count - 1; i >= 0; i--)
+                {
+                    for (int i = 0; i < ScriptEngines.Count; i++)
                     {
                         if (ScriptEngines[i].ResourceParent != resourceName) continue;
                         ScriptEngines[i].Engine.Script.API.invokeResourceStop();
                         ScriptEngines[i].Engine.Dispose();
                         ScriptEngines.RemoveAt(i);
                     }
+                }
+
             });
         }
 
@@ -473,7 +506,7 @@ namespace CherryMP.Javascript
             Func<string, int, string[]> splitter = (string input, int everyN) =>
             {
                 var list = new List<string>();
-                for (int i = 0; i < input.Length; i += everyN)
+                for (var i = 0; i < input.Length; i += everyN)
                 {
                     list.Add(input.Substring(i, Math.Min(everyN, input.Length - i)));
                 }
@@ -481,10 +514,11 @@ namespace CherryMP.Javascript
             };
 
             Util.Util.SafeNotify("~r~~h~Clientside Javascript Error~h~~w~");
-            
-            foreach (var s in splitter(ex.Message, 99))
+
+            var count = splitter(ex.Message, 99).Length;
+            for (var index = 0; index < count; index++)
             {
-                Util.Util.SafeNotify(s);
+                Util.Util.SafeNotify(splitter(ex.Message, 99)[index]);
             }
 
             LogManager.LogException(ex, "CLIENTSIDE SCRIPT ERROR");
@@ -507,25 +541,24 @@ namespace CherryMP.Javascript
 
         internal void processCoroutines()
         {
-            foreach (var coroutine in unblockedCoroutines)
+            for (int i = 0; i < unblockedCoroutines.Count; i++)
             {
+                var coroutine = unblockedCoroutines[i];
                 dynamic result;
-                if (!(result = coroutine.next()).done)
+                if ((result = coroutine.next()).done) continue;
+                dynamic value = result.value;
+                if (value is int)
                 {
-                    dynamic value = result.value;
-                    if (value is int)
+                    int offset = (int) value;
+                    int nextRun = Environment.TickCount + offset;
+                    if (!shouldRunInTime.ContainsKey(nextRun))
                     {
-                        int offset = (int) value;
-                        int nextRun = Environment.TickCount + offset;
-                        if (!shouldRunInTime.ContainsKey(nextRun))
-                        {
-                            shouldRunInTime.Add(nextRun, coroutine);
-                        }
+                        shouldRunInTime.Add(nextRun, coroutine);
                     }
-                    else
-                    {
-                        shouldRunNextFrame.Add(coroutine);
-                    }
+                }
+                else
+                {
+                    shouldRunNextFrame.Add(coroutine);
                 }
             }
 

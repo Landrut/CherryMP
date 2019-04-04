@@ -1924,9 +1924,7 @@ namespace CherryMP
         public static void AddMap(ServerMap map)
         {
             //File.WriteAllText(GTANInstallDir + "\\logs\\map.json", JsonConvert.SerializeObject(map));
-
-            GTA.UI.Screen.ShowSubtitle("Downloading Map...", 500000);
-
+            Ped PlayerChar = Game.Player.Character;
             try
             {
                 NetEntityHandler.ServerWorld = map.World;
@@ -2021,7 +2019,7 @@ namespace CherryMP
 
                     foreach (var pair in map.Players)
                     {
-                        if (NetEntityHandler.NetToEntity(pair.Key)?.Handle == Game.Player.Character.Handle)
+                        if (NetEntityHandler.NetToEntity(pair.Key)?.Handle == PlayerChar.Handle)
                         {
                             // It's us!
                             var remPl = NetEntityHandler.NetToStreamedItem(pair.Key) as RemotePlayer;
@@ -2089,8 +2087,8 @@ namespace CherryMP
 
         public static void StartClientsideScripts(ScriptCollection scripts)
         {
-            if (scripts.ClientsideScripts != null)
-                JavascriptHook.StartScripts(scripts);
+            if (scripts.ClientsideScripts == null) return;
+            JavascriptHook.StartScripts(scripts);
         }
 
         public static Dictionary<int, int> CheckPlayerVehicleMods()
@@ -2516,22 +2514,21 @@ namespace CherryMP
                 var siren = veh.SirenActive;
                 var vehdead = veh.IsDead;
 
-                var obj = new VehicleData();
-                obj.Position = (veh.Position + new Vector3(10, 0, 0)).ToLVector();
-
-
-                obj.VehicleHandle = NetEntityHandler.EntityToNet(player.CurrentVehicle.Handle);
-                obj.Quaternion = veh.Rotation.ToLVector();
-                obj.PedModelHash = player.Model.Hash;
-                obj.PlayerHealth = (byte)Util.Util.Clamp(0, player.Health, 255);
-                obj.VehicleHealth = veh.EngineHealth;
-                obj.Velocity = veh.Velocity.ToLVector();
-                obj.PedArmor = (byte)player.Armor;
-                obj.RPM = veh.CurrentRPM;
-                obj.VehicleSeat = (short)Util.Util.GetPedSeat(player);
-                obj.Flag = 0;
-                obj.Steering = veh.SteeringAngle;
-                obj.Latency = _debugInterval / 1000f;
+                var obj = new VehicleData
+                {
+                    Position = veh.Position.ToLVector(),
+                    VehicleHandle = Main.NetEntityHandler.EntityToNet(veh.Handle),
+                    Quaternion = veh.Rotation.ToLVector(),
+                    PedModelHash = player.Model.Hash,
+                    PlayerHealth = (byte)Util.Util.Clamp(0, player.Health, 255),
+                    VehicleHealth = veh.EngineHealth,
+                    Velocity = veh.Velocity.ToLVector(),
+                    PedArmor = (byte)player.Armor,
+                    RPM = veh.CurrentRPM,
+                    VehicleSeat = (short)Util.Util.GetPedSeat(player),
+                    Flag = 0,
+                    Steering = veh.SteeringAngle,
+                };
 
                 if (player.IsSubtaskActive(167) || player.IsSubtaskActive(168))
                 {
@@ -2548,34 +2545,62 @@ namespace CherryMP
                 if (veh.IsInBurnout)
                     obj.Flag |= (byte)VehicleDataFlags.BurnOut;
 
-                if (!WeaponDataProvider.DoesVehicleSeatHaveGunPosition((VehicleHash)veh.Model.Hash, Util.Util.GetPedSeat(Game.Player.Character)) && WeaponDataProvider.DoesVehicleSeatHaveMountedGuns((VehicleHash)veh.Model.Hash))
+                // DUBSTEP
+                if (!WeaponDataProvider.DoesVehicleSeatHaveGunPosition((VehicleHash)veh.Model.Hash, Util.Util.GetPedSeat(player)) &&
+                WeaponDataProvider.DoesVehicleSeatHaveMountedGuns((VehicleHash)veh.Model.Hash) &&
+                Util.Util.GetPedSeat(player) == -1)
                 {
-                    obj.WeaponHash = GetCurrentVehicleWeaponHash(Game.Player.Character);
+                    obj.Flag |= (byte)VehicleDataFlags.HasAimData;
+                    obj.AimCoords = new CherryMPShared.Vector3(0, 0, 0);
+                    obj.WeaponHash = Main.GetCurrentVehicleWeaponHash(player);
                     if (Game.IsEnabledControlPressed(0, Control.VehicleFlyAttack))
                         obj.Flag |= (byte)VehicleDataFlags.Shooting;
                 }
-                else if (WeaponDataProvider.DoesVehicleSeatHaveGunPosition((VehicleHash)veh.Model.Hash, Util.Util.GetPedSeat(Game.Player.Character)))
+                else if (WeaponDataProvider.DoesVehicleSeatHaveGunPosition((VehicleHash)veh.Model.Hash, Util.Util.GetPedSeat(player)))
                 {
-                    obj.AimCoords = RaycastEverything(new Vector2(0, 0)).ToLVector();
+                    obj.Flag |= (byte)VehicleDataFlags.HasAimData;
                     obj.WeaponHash = 0;
+                    obj.AimCoords = Main.RaycastEverything(new Vector2(0, 0)).ToLVector();
                     if (Game.IsEnabledControlPressed(0, Control.VehicleAttack))
                         obj.Flag |= (byte)VehicleDataFlags.Shooting;
                 }
                 else
                 {
-                    if (player.IsSubtaskActive(200) &&
+                    bool usingVehicleWeapon = player.IsSubtaskActive(200) || player.IsSubtaskActive(190);
+
+                    if (usingVehicleWeapon &&
                         Game.IsEnabledControlPressed(0, Control.Attack) &&
-                        Game.Player.Character.Weapons.Current?.AmmoInClip != 0)
+                        player.Weapons.Current?.AmmoInClip != 0)
+                    {
                         obj.Flag |= (byte)VehicleDataFlags.Shooting;
-                    if ((player.IsSubtaskActive(200) && // or 290
-                        Game.Player.Character.Weapons.Current?.AmmoInClip != 0) || (Game.Player.Character.Weapons.Current.Hash == WeaponHash.Unarmed && player.IsSubtaskActive(200)))
+                        obj.Flag |= (byte)VehicleDataFlags.HasAimData;
+                    }
+
+                    if ((usingVehicleWeapon &&
+                         player.Weapons.Current?.AmmoInClip != 0) ||
+                        (player.Weapons.Current?.Hash == WeaponHash.Unarmed &&
+                         player.IsSubtaskActive(200)))
+                    {
                         obj.Flag |= (byte)VehicleDataFlags.Aiming;
-                    //obj.IsShooting = Game.Player.Character.IsShooting;
-                    obj.AimCoords = RaycastEverything(new Vector2(0, 0)).ToLVector();
+                        obj.Flag |= (byte)VehicleDataFlags.HasAimData;
+                    }
 
                     var outputArg = new OutputArgument();
-                    Function.Call(Hash.GET_CURRENT_PED_WEAPON, Game.Player.Character, outputArg, true);
+                    Function.Call(Hash.GET_CURRENT_PED_WEAPON, player, outputArg, true);
                     obj.WeaponHash = outputArg.GetResult<int>();
+
+                    lock (SyncCollector.Lock)
+                    {
+                        if (SyncCollector.LastSyncPacket != null && SyncCollector.LastSyncPacket is VehicleData &&
+                            WeaponDataProvider.NeedsFakeBullets(obj.WeaponHash.Value) &&
+                            (((VehicleData)SyncCollector.LastSyncPacket).Flag & (byte)VehicleDataFlags.Shooting) != 0)
+                        {
+                            obj.Flag |= (byte)VehicleDataFlags.Shooting;
+                            obj.Flag |= (byte)VehicleDataFlags.HasAimData;
+                        }
+                    }
+
+                    obj.AimCoords = Main.RaycastEverything(new Vector2(0, 0)).ToLVector();
                 }
 
                 Vehicle trailer;
@@ -2619,6 +2644,29 @@ namespace CherryMP
                         }
                     }
                 }
+            }
+            return null;
+        }
+
+        public static SyncPed GetPedWeHaveDamaged()
+        {
+            var us = Game.Player.Character;
+
+            SyncPed[] myArray;
+
+            lock (StreamerThread.StreamedInPlayers) myArray = StreamerThread.StreamedInPlayers.ToArray();
+
+            foreach (var index in myArray)
+            {
+                if (index == null) continue;
+
+                var them = new Ped(index.LocalHandle);
+                if (!them.HasBeenDamagedBy(us)) continue;
+
+                Function.Call(Hash.CLEAR_ENTITY_LAST_DAMAGE_ENTITY, them);
+                Function.Call(Hash.CLEAR_ENTITY_LAST_DAMAGE_ENTITY, us);
+                //Util.Util.SafeNotify("Shot at" + index.Name + " " + DateTime.Now.Millisecond);
+                return index;
             }
             return null;
         }
@@ -2671,13 +2719,17 @@ namespace CherryMP
             confirmObj.Write((byte)PacketType.ConnectionConfirmed);
             confirmObj.Write(true);
             confirmObj.Write(resources.Count);
-            foreach (var resource in resources)
+
+            for (int i = 0; i < resources.Count; i++)
             {
-                confirmObj.Write(resource);
+                confirmObj.Write(resources[i]);
             }
+
             Client.SendMessage(confirmObj, NetDeliveryMethod.ReliableOrdered, (int)ConnectionChannel.SyncEvent);
 
             HasFinishedDownloading = true;
+            Function.Call((Hash)0x10D373323E5B9C0D); //_REMOVE_LOADING_PROMPT
+            Function.Call(Hash.DISPLAY_RADAR, true);
         }
 
         public static int GetCurrentVehicleWeaponHash(Ped ped)
@@ -3579,7 +3631,7 @@ namespace CherryMP
 
                 if (StringCache != null)
                 {
-                    StringCache.Pulse();
+                    StringCache?.Pulse();
                 }
 
                 DEBUG_STEP = 17;
@@ -4021,7 +4073,7 @@ namespace CherryMP
             {
                 try
                 {
-                    using (WebClient wc = new WebClient())
+                    using (var wc = new WebClient())
                     {
                         var manifestJson = wc.DownloadString(address + "/manifest.json");
 
@@ -4037,11 +4089,12 @@ namespace CherryMP
                             if (!Directory.Exists(FileTransferId._DOWNLOADFOLDER_ + resource.Key))
                                 Directory.CreateDirectory(FileTransferId._DOWNLOADFOLDER_ + resource.Key);
 
-                            foreach (var file in resource.Value)
+                            for (var index = resource.Value.Count - 1; index >= 0; index--)
                             {
+                                var file = resource.Value[index];
                                 if (file.type == FileType.Script) continue;
 
-                                string target = Path.Combine(FileTransferId._DOWNLOADFOLDER_, resource.Key, file.path);
+                                var target = Path.Combine(FileTransferId._DOWNLOADFOLDER_, resource.Key, file.path);
 
                                 if (File.Exists(target))
                                 {
@@ -4051,16 +4104,14 @@ namespace CherryMP
                                 }
 
                                 wc.DownloadFileAsync(
-                                    new Uri(string.Format("{0}/{1}/{2}", address, resource.Key, file.path)), target);
+                                    new Uri($"{address}/{resource.Key}/{file.path}"), target);
 
                                 while (wc.IsBusy)
                                 {
                                     Thread.Yield();
-                                    if (_cancelDownload)
-                                    {
-                                        wc.CancelAsync();
-                                        return;
-                                    }
+                                    if (!_cancelDownload) continue;
+                                    wc.CancelAsync();
+                                    return;
                                 }
                             }
                         }
@@ -4072,7 +4123,7 @@ namespace CherryMP
                 }
             });
         }
-#endregion
+        #endregion
 
         public void OnKeyDown(object sender, KeyEventArgs e)
         {
@@ -4389,7 +4440,7 @@ namespace CherryMP
                         var len = msg.ReadInt32();
                         var data = msg.ReadBytes(len);
                         var packet = PacketOptimization.ReadLightVehicleSync(data);
-                        LogManager.DebugLog("RECEIVED LIGHT VEHICLE PACKET");
+                        //LogManager.DebugLog("RECEIVED LIGHT VEHICLE PACKET");
                         HandleVehiclePacket(packet, false);
                     }
                     break;
@@ -4414,34 +4465,35 @@ namespace CherryMP
                         var len = msg.ReadInt32();
                         var data = msg.ReadBytes(len);
 
-                        int nethandle;
+                        LogManager.DebugLog("BASICSYNC - " + data + " | " + len);
+                        foreach (var value in data)
+                            LogManager.DebugLog("BASICSYNC FOR - " + value);
+
                         CherryMPShared.Vector3 position;
-                        PacketOptimization.ReadBasicSync(data, out nethandle, out position);
+                        PacketOptimization.ReadBasicSync(data, out int nethandle, out position);
 
                         HandleBasicPacket(nethandle, position.ToVector());
                     }
                     break;
                 case PacketType.BulletSync:
                     {
+                        //Util.Util.SafeNotify("Bullet Packet" + DateTime.Now.Millisecond);
                         var len = msg.ReadInt32();
                         var data = msg.ReadBytes(len);
 
-                        int nethandle;
                         CherryMPShared.Vector3 position;
-                        bool shooting = PacketOptimization.ReadBulletSync(data, out nethandle, out position);
+                        var shooting = PacketOptimization.ReadBulletSync(data, out int nethandle, out position);
 
                         HandleBulletPacket(nethandle, shooting, position.ToVector());
                     }
                     break;
                 case PacketType.BulletPlayerSync:
                     {
+                        //Util.Util.SafeNotify("Bullet Player Packet" + DateTime.Now.Millisecond);
                         var len = msg.ReadInt32();
                         var data = msg.ReadBytes(len);
 
-                        int nethandle;
-                        int nethandleTarget;
-                        bool shooting = PacketOptimization.ReadBulletSync(data, out nethandle, out nethandleTarget);
-
+                        var shooting = PacketOptimization.ReadBulletSync(data, out int nethandle, out int nethandleTarget);
                         HandleBulletPacket(nethandle, shooting, nethandleTarget);
                     }
                     break;
@@ -5533,7 +5585,7 @@ namespace CherryMP
             //Client.Recycle(msg);
         }
 
-#region Bullets stuff
+        #region Bullets stuff
 
         private void HandleBasicPacket(int nethandle, Vector3 position)
         {
@@ -5559,6 +5611,7 @@ namespace CherryMP
 
         private void HandleVehiclePacket(VehicleData fullData, bool purePacket)
         {
+            if (fullData.NetHandle == null) return;
             var syncPed = NetEntityHandler.GetPlayer(fullData.NetHandle.Value);
 
             syncPed.IsInVehicle = true;
@@ -5575,10 +5628,7 @@ namespace CherryMP
             if (fullData.PedModelHash != null) syncPed.ModelHash = fullData.PedModelHash.Value;
             if (fullData.PedArmor != null) syncPed.PedArmor = fullData.PedArmor.Value;
             if (fullData.RPM != null) syncPed.VehicleRPM = fullData.RPM.Value;
-            if (fullData.Quaternion != null)
-            {
-                syncPed.VehicleRotation = fullData.Quaternion.ToVector();
-            }
+            if (fullData.Quaternion != null) syncPed.VehicleRotation = fullData.Quaternion.ToVector();
             if (fullData.PlayerHealth != null) syncPed.PedHealth = fullData.PlayerHealth.Value;
             if (fullData.VehicleHealth != null) syncPed.VehicleHealth = fullData.VehicleHealth.Value;
             if (fullData.VehicleSeat != null) syncPed.VehicleSeat = fullData.VehicleSeat.Value;
@@ -5586,7 +5636,7 @@ namespace CherryMP
             if (fullData.Steering != null) syncPed.SteeringScale = fullData.Steering.Value;
             if (fullData.Velocity != null) syncPed.Speed = fullData.Velocity.ToVector().Length();
             if (fullData.DamageModel != null && syncPed.MainVehicle != null) syncPed.MainVehicle.SetVehicleDamageModel(fullData.DamageModel);
-
+            
             if (fullData.Flag != null)
             {
                 syncPed.IsVehDead = (fullData.Flag.Value & (short)VehicleDataFlags.VehicleDead) > 0;
@@ -5597,6 +5647,7 @@ namespace CherryMP
                 syncPed.IsInBurnout = (fullData.Flag.Value & (short)VehicleDataFlags.BurnOut) > 0;
                 syncPed.ExitingVehicle = (fullData.Flag.Value & (short)VehicleDataFlags.ExitingVehicle) != 0;
                 syncPed.IsPlayerDead = (fullData.Flag.Value & (int)VehicleDataFlags.PlayerDead) != 0;
+                syncPed.Braking = (fullData.Flag.Value & (short)VehicleDataFlags.Braking) != 0;
             }
 
             if (fullData.WeaponHash != null)
@@ -5635,26 +5686,33 @@ namespace CherryMP
 
         private void HandleBulletPacket(int netHandle, bool shooting, Vector3 aim)
         {
+            //Util.Util.SafeNotify("Handling Bullet - " + DateTime.Now.Millisecond);
             var syncPed = NetEntityHandler.GetPlayer(netHandle);
 
             syncPed.IsShooting = shooting;
+            syncPed.AimedAtPlayer = false;
 
             if (shooting) syncPed.AimCoords = aim;
         }
 
         private void HandleBulletPacket(int netHandle, bool shooting, int netHandleTarget)
         {
+            //Util.Util.SafeNotify("Handling PlayerBullet - " + DateTime.Now.Millisecond);
             var syncPed = NetEntityHandler.GetPlayer(netHandle);
-            var syncPedTarget = NetEntityHandler.GetPlayer(netHandleTarget);
+            var syncPedTarget = NetEntityHandler.NetToEntity(netHandleTarget);
+            if (syncPed.StreamedIn && syncPedTarget != null)
+            {
+                syncPed.IsShooting = shooting;
+                syncPed.AimedAtPlayer = true;
 
-            syncPed.IsShooting = shooting;
-
-            if (shooting) syncPed.AimPlayer = syncPedTarget;
+                if (shooting) syncPed.AimPlayer = new Ped(syncPedTarget.Handle);
+            }
         }
-#endregion
+        #endregion
 
         private void HandlePedPacket(PedData fullPacket, bool pure)
         {
+            if (fullPacket.NetHandle == null) return;
             var syncPed = NetEntityHandler.GetPlayer(fullPacket.NetHandle.Value);
 
 
@@ -5714,58 +5772,64 @@ namespace CherryMP
 
         public void HandleUnoccupiedVehicleSync(VehicleData data)
         {
-            var car = NetEntityHandler.NetToStreamedItem(data.VehicleHandle.Value) as RemoteVehicle;
-
-            if (car != null)
+            if (data.VehicleHandle != null)
             {
-                car.Health = data.VehicleHealth.Value;
-                car.IsDead = (data.Flag & (int)VehicleDataFlags.VehicleDead) != 0;
+                var car = NetEntityHandler.NetToStreamedItem(data.VehicleHandle.Value) as RemoteVehicle;
 
-                if (car.DamageModel == null) car.DamageModel = new VehicleDamageModel();
-                car.DamageModel.BrokenWindows = data.DamageModel.BrokenWindows;
-                car.DamageModel.BrokenDoors = data.DamageModel.BrokenDoors;
-
-                car.Tires = data.PlayerHealth.Value;
-
-                if (car.StreamedIn)
+                if (car != null)
                 {
-                    var ent = NetEntityHandler.NetToEntity(data.VehicleHandle.Value);
+                    if (data.VehicleHealth != null) car.Health = data.VehicleHealth.Value;
+                    car.IsDead = (data.Flag & (int)VehicleDataFlags.VehicleDead) != 0;
 
-                    if (ent != null)
+                    if (car.DamageModel == null) car.DamageModel = new VehicleDamageModel();
+                    car.DamageModel.BrokenWindows = data.DamageModel.BrokenWindows;
+                    car.DamageModel.BrokenDoors = data.DamageModel.BrokenDoors;
+
+                    if (data.PlayerHealth != null)
                     {
-                        if (data.Velocity != null)
+                        car.Tires = data.PlayerHealth.Value;
+
+                        if (car.StreamedIn)
                         {
-                            VehicleSyncManager.Interpolate(data.VehicleHandle.Value, ent.Handle, data.Position.ToVector(), data.Velocity, data.Quaternion.ToVector());
+                            var ent = NetEntityHandler.NetToEntity(data.VehicleHandle.Value);
+
+                            if (ent != null)
+                            {
+                                if (data.Velocity != null)
+                                {
+                                    VehicleSyncManager.Interpolate(data.VehicleHandle.Value, ent.Handle, data.Position.ToVector(), data.Velocity, data.Quaternion.ToVector());
+                                }
+                                else
+                                {
+                                    car.Position = data.Position;
+                                    car.Rotation = data.Quaternion;
+                                }
+
+                                var veh = new Vehicle(ent.Handle);
+
+                                veh.SetVehicleDamageModel(car.DamageModel);
+
+                                veh.EngineHealth = car.Health;
+                                if (!ent.IsDead && car.IsDead)
+                                {
+                                    ent.IsInvincible = false;
+                                    veh.Explode();
+                                }
+
+                                for (int i = 0; i < 8; i++)
+                                {
+                                    bool busted = (data.PlayerHealth.Value & (byte)(1 << i)) != 0;
+                                    if (busted && !veh.IsTireBurst(i)) veh.Wheels[i].Burst();
+                                    else if (!busted && veh.IsTireBurst(i)) veh.Wheels[i].Fix();
+                                }
+                            }
                         }
                         else
                         {
                             car.Position = data.Position;
                             car.Rotation = data.Quaternion;
                         }
-
-                        var veh = new Vehicle(ent.Handle);
-
-                        veh.SetVehicleDamageModel(car.DamageModel);
-
-                        veh.EngineHealth = car.Health;
-                        if (!ent.IsDead && car.IsDead)
-                        {
-                            ent.IsInvincible = false;
-                            veh.Explode();
-                        }
-
-                        for (int i = 0; i < 8; i++)
-                        {
-                            bool busted = (data.PlayerHealth.Value & (byte)(1 << i)) != 0;
-                            if (busted && !veh.IsTireBurst(i)) veh.Wheels[i].Burst();
-                            else if (!busted && veh.IsTireBurst(i)) veh.Wheels[i].Fix();
-                        }
                     }
-                }
-                else
-                {
-                    car.Position = data.Position;
-                    car.Rotation = data.Quaternion;
                 }
             }
         }

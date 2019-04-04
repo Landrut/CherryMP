@@ -50,7 +50,8 @@ namespace CherryMP.Networking
         internal bool IsAiming;
         internal Vector3 AimCoords;
 
-        internal SyncPed AimPlayer;
+        internal Ped AimPlayer;
+        internal bool AimedAtPlayer;
 
         internal float Latency;
         internal bool IsHornPressed;
@@ -106,6 +107,7 @@ namespace CherryMP.Networking
         internal int PedArmor;
         internal bool IsVehDead;
         internal bool IsPlayerDead;
+        internal bool Braking;
         internal bool DirtyWeapons;
 
         private object _secondSnapshot;
@@ -168,19 +170,9 @@ namespace CherryMP.Networking
             }
         }
 
-        internal long TicksSinceLastUpdate
-        {
-            get { return Util.Util.TickCount - LastUpdateReceived; }
-        }
+        internal long TicksSinceLastUpdate => Util.Util.TickCount - LastUpdateReceived;
 
-        internal int DataLatency
-        {
-            get
-            {
-                if (Debug) return Main._debugInterval;
-                return (int)(((Latency * 1000) / 2) + ((Main.Latency * 1000) / 2));
-            }
-        }
+        internal int DataLatency => (int)(((Latency * 1000) / 2) + (Main.Latency * 1000) / 2);
 
         internal Dictionary<int, int> VehicleMods
         {
@@ -801,11 +793,11 @@ namespace CherryMP.Networking
                 //if (Main.VehicleLagCompensation)
                 //{
 
-                var dir = Position - _lastPosition.Value;
-                currentInterop.vecTarget = Position + dir;
-                currentInterop.vecError = dir;
-                //MainVehicle == null ? dir : MainVehicle.Position - currentInterop.vecTarget;
-                //currentInterop.vecError *= Util.Lerp(0.25f, Util.Unlerp(100, 100, 400), 1f);
+                    var dir = Position - _lastPosition.Value;
+                    currentInterop.vecTarget = Position + dir;
+                    currentInterop.vecError = dir;
+                    //MainVehicle == null ? dir : MainVehicle.Position - currentInterop.vecTarget;
+                    //currentInterop.vecError *= Util.Lerp(0.25f, Util.Unlerp(100, 100, 400), 1f);
                 //}
                 //else
                 //{
@@ -822,13 +814,13 @@ namespace CherryMP.Networking
             {
                 //if (Main.OnFootLagCompensation)
                 //{
-                var dir = Position - _lastPosition;
-                currentInterop.vecTarget = Position; // + dir;
-                currentInterop.vecError = dir ?? new Vector3();
-                currentInterop.vecStart = Position;
+                    var dir = Position - _lastPosition;
+                    currentInterop.vecTarget = Position; // + dir;
+                    currentInterop.vecError = dir ?? new Vector3();
+                    currentInterop.vecStart = Position;
 
-                //MainVehicle == null ? dir : MainVehicle.Position - currentInterop.vecTarget;
-                //currentInterop.vecError *= Util.Lerp(0.25f, Util.Unlerp(100, 100, 400), 1f);
+                    //MainVehicle == null ? dir : MainVehicle.Position - currentInterop.vecTarget;
+                    //currentInterop.vecError *= Util.Lerp(0.25f, Util.Unlerp(100, 100, 400), 1f);
                 //}
                 //else
                 //{
@@ -847,7 +839,7 @@ namespace CherryMP.Networking
             currentInterop.FinishTime = currentInterop.StartTime + 100;
             currentInterop.LastAlpha = 0f;
         }
-
+        // DUBSTEP
         private void VMultiVehiclePos()
         {
 
@@ -856,23 +848,23 @@ namespace CherryMP.Networking
             if (isInRange)
             {
                 Vector3 vecDif = Position - currentInterop.vecStart; // Différence entre les deux positions (nouvelle & voiture) fin de connaitre la direction
-                float force = 1.20f + (float)Math.Sqrt(_latencyAverager.Average() / 2500) + (Speed / 250); // Calcul pour connaitre la force à appliquer à partir du ping & de la vitesse
-                float forceVelo = 1.05f + (float)Math.Sqrt(_latencyAverager.Average() / 5000) + (Speed / 750); // calcul de la force à appliquer au vecteur
+                float force = 1.10f + (float)Math.Sqrt(_latencyAverager.Average() / 2500) + (Speed / 250); // Calcul pour connaitre la force à appliquer à partir du ping & de la vitesse
+                float forceVelo = 0.97f + (float)Math.Sqrt(_latencyAverager.Average() / 5000) + (Speed / 750); // calcul de la force à appliquer au vecteur
 
                 if (MainVehicle.Velocity.Length() > VehicleVelocity.Length()) 
                 {
-                    MainVehicle.Velocity = VehicleVelocity * forceVelo + (vecDif * (force + 0.15f)); // Calcul
+                    MainVehicle.Velocity = VehicleVelocity * forceVelo + (vecDif * 3f); // Calcul
                 }
                 else
                 {
-                    MainVehicle.Velocity = VehicleVelocity * (forceVelo - 0.25f) + (vecDif * (force)); // Calcul
+                    MainVehicle.Velocity = VehicleVelocity * (forceVelo - 0.20f) + (vecDif * force); // Calcul
                 }
                 StuckVehicleCheck(Position);
             }
             else
             {
-                MainVehicle.PositionNoOffset = currentInterop.vecTarget;
-                //MainVehicle.Velocity = VehicleVelocity;
+                //MainVehicle.PositionNoOffset = currentInterop.vecTarget;
+                MainVehicle.Velocity = VehicleVelocity;
             }
 
             if (isInRange && _lastVehicleRotation != null && (_lastVehicleRotation.Value - _vehicleRotation).LengthSquared() > 1f /* && spazzout */)
@@ -1682,62 +1674,72 @@ namespace CherryMP.Networking
 	        }
 
 	        var gunEnt = Function.Call<Prop>((Hash)0x3B390A939AF0B5FC, Character);
-	        if (gunEnt != null)
-	        {
+            if (gunEnt != null)
+            {
                 //var start = gunEnt.GetOffsetInWorldCoords(new Vector3(0, 0, 0));
                 var start = gunEnt.Position;
-                var dir = (AimCoords - start);
-	            dir.Normalize();
-	            var end = start + dir*100f;
+                Vector3 dir;
+                if (AimedAtPlayer)
+                {
+                    var us = Game.Player.Character;
+                    if (us == AimPlayer)
+                    {
+                        dir = (Game.Player.Character.Position - start);
+                    }
+                    else
+                    {
+                        dir = (AimPlayer.Position - start);
+                    }
+                }
+                else
+                {
+                    dir = (AimCoords - start);
+                }
 
-	            if (IsInCover) // Weapon spread
-	            {
-	                end += Vector3.RandomXYZ()*2f;
-	            }
+                dir.Normalize();
+                var end = start + dir * 100f;
 
-	            if (!WeaponDataProvider.NeedsFakeBullets(CurrentWeapon))
-	            {
-	                Function.Call(Hash.SET_PED_SHOOTS_AT_COORD, Character, end.X, end.Y, end.Z, true);
-	            }
-	            else
-	            {
-	                var damage = WeaponDataProvider.GetWeaponDamage((WeaponHash) CurrentWeapon);
-	                var speed = 0xbf800000;
-	                var weaponH = (WeaponHash) CurrentWeapon;
+                if (IsInCover) // Weapon spread
+                {
+                    end += Vector3.RandomXYZ() * 2f;
+                }
 
+                if (!WeaponDataProvider.NeedsFakeBullets(CurrentWeapon))
+                {
+                    Function.Call(Hash.SET_PED_SHOOTS_AT_COORD, Character, end.X, end.Y, end.Z, true);
+                }
+                else
+                {
+                    var damage = WeaponDataProvider.GetWeaponDamage((WeaponHash)CurrentWeapon);
+                    var speed = 0xbf800000;
+                    var weaponH = (WeaponHash)CurrentWeapon;
 
-	                if (weaponH == WeaponHash.Minigun)
-	                    weaponH = WeaponHash.CombatPDW;
+                    if (weaponH == WeaponHash.Minigun) weaponH = WeaponHash.CombatPDW;
 
-	                if (IsFriend())
-	                    damage = 0;
+                    if (IsFriend()) damage = 0;
 
-	                Function.Call(Hash.SHOOT_SINGLE_BULLET_BETWEEN_COORDS, start.X, start.Y, start.Z,
-	                    end.X,
-	                    end.Y, end.Z, damage, true, (int) weaponH, Character, false, true, speed);
+                    Function.Call(Hash.SHOOT_SINGLE_BULLET_BETWEEN_COORDS, start.X, start.Y, start.Z, end.X, end.Y, end.Z, damage, true, (int)weaponH, Character, false, true, speed);
 
-	                _lastStart = start;
-	                _lastEnd = end;
-	            }
+                    _lastStart = start;
+                    _lastEnd = end;
+                }
 
-	            if (Function.Call<bool>(Hash.HAS_ENTITY_BEEN_DAMAGED_BY_ENTITY, Game.Player.Character, Character, true))
-	            {
-
-	                int boneHit = -1;
+                Ped PlayerChar = Game.Player.Character;
+                if (Function.Call<bool>(Hash.HAS_ENTITY_BEEN_DAMAGED_BY_ENTITY, PlayerChar, Character, true))
+                {
+                    int boneHit = -1;
                     var boneHitArg = new OutputArgument();
 
-	                if (Function.Call<bool>(Hash.GET_PED_LAST_DAMAGE_BONE, Game.Player.Character, boneHitArg))
-	                {
-	                    boneHit = boneHitArg.GetResult<int>();
-	                }
+                    if (Function.Call<bool>(Hash.GET_PED_LAST_DAMAGE_BONE, PlayerChar, boneHitArg))
+                    {
+                        boneHit = boneHitArg.GetResult<int>();
+                    }
 
                     LocalHandle them = new LocalHandle(Character.Handle, HandleType.GameHandle);
-                    JavascriptHook.InvokeCustomEvent(api =>
-                        api.invokeonLocalPlayerDamaged(them, CurrentWeapon, boneHit/*, playerHealth, playerArmor*/));
-	            }
-
+                    JavascriptHook.InvokeCustomEvent(api => api.invokeonLocalPlayerDamaged(them, CurrentWeapon, boneHit/*, playerHealth, playerArmor*/));
+                }
                 Function.Call(Hash.CLEAR_ENTITY_LAST_DAMAGE_ENTITY, Character);
-                Function.Call(Hash.CLEAR_ENTITY_LAST_DAMAGE_ENTITY, Game.Player.Character);
+                Function.Call(Hash.CLEAR_ENTITY_LAST_DAMAGE_ENTITY, PlayerChar);
             }
         }
 
@@ -1747,8 +1749,9 @@ namespace CherryMP.Networking
             if (IsReloading) return;
 			if (hands == 3 || hands == 4 || hands == 0)
 			{
-				DisplayMeleeAnimation(hands);
-			}
+                DisplayMeleeAnimation(hands);
+                DisplayMeleeAnimation();
+            }
 			else
 			{
                 DisplayWeaponShootingAnimation();
@@ -2224,24 +2227,24 @@ namespace CherryMP.Networking
                     bForceLocalZ = true;
                 }
             }
-
-            if (Math.Abs(vecRemoteMovement.X) < 0.01f)
-            {
-                float fLocalErrorX = Math.Abs(vecLocalError.X);
-                if (fLocalErrorX > 0.1f && fLocalErrorX < 10)
-                {
-                    bForceLocalXY = true;
-                }
-            }
-
-            if (Math.Abs(vecRemoteMovement.Y) < 0.01f)
-            {
-                float fLocalErrorY = Math.Abs(vecLocalError.Y);
-                if (fLocalErrorY > 0.1f && fLocalErrorY < 10)
-                {
-                    bForceLocalXY = true;
-                }
-            }
+            /*
+             if (Math.Abs(vecRemoteMovement.X) < 0.01f)
+             {
+                 float fLocalErrorX = Math.Abs(vecLocalError.X);
+                 if (fLocalErrorX > 0.1f && fLocalErrorX < 10)
+                 {
+                     bForceLocalXY = true;
+                 }
+             }
+             if (Math.Abs(vecRemoteMovement.Y) < 0.01f)
+             {
+                 float fLocalErrorY = Math.Abs(vecLocalError.Y);
+                 if (fLocalErrorY > 0.1f && fLocalErrorY < 10)
+                 {
+                     bForceLocalXY = true;
+                 }
+             }
+             */
 
             // Only force position if needed for at least two consecutive calls
             if (!bForceLocalZ && !bForceLocalXY)

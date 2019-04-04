@@ -370,7 +370,12 @@ namespace CherryMP.Networking
                         }
                     }
 
-                    if (delta >= ent.PositionMovement.Duration) ent.PositionMovement = null;
+                    if (delta >= ent.PositionMovement.Duration)
+                    {
+                        // Ensure that the position will be the one that was given
+                        ent.Position = ent.PositionMovement.EndVector;
+                        ent.PositionMovement = null;
+                    }
                 }
 
                 if (ent.RotationMovement != null)
@@ -405,7 +410,12 @@ namespace CherryMP.Networking
                         }
                     }
 
-                    if (delta >= ent.RotationMovement.Duration) ent.RotationMovement = null;
+                    if (delta >= ent.RotationMovement.Duration)
+                    {
+                        // Ensure that the position will be the one that was given
+                        ent.Rotation = ent.RotationMovement.EndVector;
+                        ent.RotationMovement = null;
+                    }
                 }
             }
         }
@@ -536,9 +546,9 @@ namespace CherryMP.Networking
         public RemotePlayer LocalCharacter;
         public void AddLocalCharacter(int nethandle)
         {
+            LocalCharacter = new RemotePlayer() { LocalHandle = -2, RemoteHandle = nethandle, StreamedIn = true };
             lock (ClientMap)
             {
-                LocalCharacter = new RemotePlayer() {LocalHandle = -2, RemoteHandle = nethandle, StreamedIn = true};
                 ClientMap.Add(nethandle, LocalCharacter);
                 HandleMap.Add(nethandle, -2);
             }
@@ -549,13 +559,12 @@ namespace CherryMP.Networking
             lock (ClientMap)
             {
                 var streamedItem = NetToStreamedItem(netId);
+                if (streamedItem == null || !streamedItem.StreamedIn) return null;
                 var handleable = streamedItem as ILocalHandleable;
-                if (streamedItem == null) return null;
                 if (handleable == null) return new Prop(netId);
                 if (handleable.LocalHandle == -2) return Game.Player.Character;
-                if (!streamedItem.StreamedIn) return null;
                 return new Prop(handleable.LocalHandle);
-             }
+            }
         }
 
         public Entity NetToEntity(IStreamedItem netId)
@@ -563,7 +572,7 @@ namespace CherryMP.Networking
             lock (ClientMap)
             {
                 var handleable = netId as ILocalHandleable;
-                if (netId == null || handleable == null) return new Prop(netId?.RemoteHandle ?? 0);
+                if (handleable == null || netId == null) return new Prop(netId?.RemoteHandle ?? 0);
                 if (handleable.LocalHandle == -2) return Game.Player.Character;
                 return new Prop(handleable.LocalHandle);
             }
@@ -607,7 +616,7 @@ namespace CherryMP.Networking
                 return entityHandle;
             }
         }
-        
+
         public void Remove(IStreamedItem item)
         {
             lock (ClientMap)
@@ -1648,24 +1657,25 @@ namespace CherryMP.Networking
         internal SyncPed GetPlayer(int netHandle)
         {
             SyncPed rem = NetToStreamedItem(netHandle) as SyncPed;
-            if (rem == null)
-            {
-                lock (ClientMap)
-                {
-                    ClientMap.Add(netHandle, rem = new SyncPed()
-                    {
-                        RemoteHandle = netHandle,
-                        EntityType = (byte) EntityType.Player,
-                        StreamedIn = false, // change me
-                        LocalOnly = false,
+            if (rem != null) return rem;
 
-                        BlipSprite = -1,
-                        BlipColor = -1,
-                        BlipAlpha = 255,
-                        Alpha = 255,
-                        Team = -1,
-                    });
-                }
+            rem = new SyncPed()
+            {
+                RemoteHandle = netHandle,
+                EntityType = (byte)EntityType.Player,
+                StreamedIn = false, // change me
+                LocalOnly = false,
+
+                BlipSprite = -1,
+                BlipColor = -1,
+                BlipAlpha = 255,
+                Alpha = 255,
+                Team = -1,
+            };
+
+            lock (ClientMap)
+            {
+                ClientMap.Add(netHandle, rem);
             }
             return rem;
         }
@@ -1699,16 +1709,14 @@ namespace CherryMP.Networking
             rem.WeaponComponents = prop.WeaponComponents;
             rem.NametagText = prop.NametagText;
             rem.NametagSettings = prop.NametagSettings;
-            
-            if (rem is SyncPed)
-            {
-                if (prop.Position != null)
-                    ((SyncPed)rem).Position = prop.Position.ToVector();
-                if (prop.Rotation != null)
-                    ((SyncPed)rem).Rotation = prop.Rotation.ToVector();
 
-                ((SyncPed) rem).DirtyWeapons = true;
-            }
+            if (!(rem is SyncPed)) return;
+            if (prop.Position != null)
+                ((SyncPed)rem).Position = prop.Position.ToVector();
+            if (prop.Rotation != null)
+                ((SyncPed)rem).Rotation = prop.Rotation.ToVector();
+
+            ((SyncPed)rem).DirtyWeapons = true;
         }
 
         public RemotePickup CreatePickup(Vector3 pos, Vector3 rot, int pickupHash, int amount, int netHandle)
@@ -1900,29 +1908,58 @@ namespace CherryMP.Networking
             switch ((EntityType) item.EntityType)
             {
                 case EntityType.Vehicle:
-                    StreamInVehicle((RemoteVehicle) item);
+                    {
+                        StreamInVehicle((RemoteVehicle)item);
+                    }
                     break;
                 case EntityType.Prop:
-                    StreamInProp((RemoteProp) item);
+                    {
+                        StreamInProp((RemoteProp)item);
+                    }
                     break;
                 case EntityType.Pickup:
-                    StreamInPickup((RemotePickup) item);
+                    {
+                        StreamInPickup((RemotePickup)item);
+                    }
                     break;
                 case EntityType.Blip:
-                    StreamInBlip((RemoteBlip) item);
+                    {
+                        StreamInBlip((RemoteBlip)item);
+                    }
                     break;
                 case EntityType.Player:
-                    if (item is SyncPed) ((SyncPed) item).StreamedIn = true;
+                    {
+                        var ped = item as SyncPed;
+                        if (ped != null)
+                        {
+                            ped.StreamedIn = true;
+                            JavascriptHook.InvokeStreamInEvent(new LocalHandle(ped.LocalHandle), (int)EntityType.Player);
+                        }
+                    }
                     break;
                 case EntityType.Ped:
-                    StreamInPed((RemotePed) item);
+                    {
+                        StreamInPed((RemotePed)item);
+                    }
                     break;
                 case EntityType.Marker:
+                    {
+                        item.StreamedIn = true;
+                        //var data = (ILocalHandleable)item;
+                        //JavascriptHook.InvokeStreamInEvent(new LocalHandle(data.LocalHandle), (int)EntityType.Marker);
+                    }
+                    break;
                 case EntityType.TextLabel:
-                    item.StreamedIn = true;
+                    {
+                        item.StreamedIn = true;
+                        //var data = (ILocalHandleable)item;
+                        //JavascriptHook.InvokeStreamInEvent(new LocalHandle(data.LocalHandle), (int)EntityType.TextLabel);
+                    }
                     break;
                 case EntityType.Particle:
-                    StreamInParticle((RemoteParticle) item);
+                    {
+                        StreamInParticle((RemoteParticle)item);
+                    }
                     break;
             }
 
@@ -1946,51 +1983,75 @@ namespace CherryMP.Networking
                 }
             }
 
-            if (item is EntityProperties && ((EntityProperties) item).Attachables != null)
-            {
-                foreach (var attachable in ((EntityProperties)item).Attachables)
-                {
-                    var att = NetToStreamedItem(attachable);
-                    if (att != null) StreamIn(att);
-                }
-            }
+            //if ((item as EntityProperties)?.Attachables != null)
+            //{
+            //    foreach (var attachable in ((EntityProperties)item).Attachables)
+            //    {
+            //        var att = NetToStreamedItem(attachable);
+            //        if (att != null) StreamIn(att);
+            //    }
+            //}
 
-            if (item is EntityProperties && ((EntityProperties)item).AttachedTo != null)
-            {
-                LogManager.DebugLog("ITEM " + item.RemoteHandle + " IS ATTACHED TO " + ((EntityProperties)item).AttachedTo);
-
-                var target = NetToStreamedItem(((EntityProperties) item).AttachedTo.NetHandle);
-                if (target != null)
-                {
-                    LogManager.DebugLog("ATTACHED TO " + target.GetType());
-                    AttachEntityToEntity(item, target, ((EntityProperties)item).AttachedTo);
-                }
-            }
+            //if ((item as EntityProperties)?.AttachedTo != null)
+            //{
+            //    var target = NetToStreamedItem(((EntityProperties)item).AttachedTo.NetHandle);
+            //    if (target == null) return;
+            //    AttachEntityToEntity(item, target, ((EntityProperties)item).AttachedTo);
+            //}
         }
         public void StreamOut(IStreamedItem item)
         {
             if (item == null) return;
             if (!item.StreamedIn) return;
 
-            switch ((EntityType) item.EntityType)
+            switch ((EntityType)item.EntityType)
             {
                 case EntityType.Prop:
+                    {
+                        var data = (ILocalHandleable)item;
+                        JavascriptHook.InvokeStreamOutEvent(new LocalHandle(data.LocalHandle), (int)EntityType.Prop);
+                        var obj = new Prop(data.LocalHandle);
+                        if (obj.Exists()) obj.Delete();
+                    }
+                    break;
                 case EntityType.Vehicle:
+                    {
+                        var data = (ILocalHandleable)item;
+                        JavascriptHook.InvokeStreamOutEvent(new LocalHandle(data.LocalHandle), (int)EntityType.Vehicle);
+                        var obj = new Prop(data.LocalHandle);
+                        if (obj.Exists()) obj.Delete();
+                    }
+                    break;
                 case EntityType.Ped:
-                    StreamOutEntity((ILocalHandleable) item);
+                    {
+                        var data = (ILocalHandleable)item;
+                        JavascriptHook.InvokeStreamOutEvent(new LocalHandle(data.LocalHandle), (int)EntityType.Ped);
+                        var obj = new Prop(data.LocalHandle);
+                        if (obj.Exists()) obj.Delete();
+                    }
                     break;
                 case EntityType.Blip:
-                    StreamOutBlip((ILocalHandleable) item);
+                    {
+                        var data = (ILocalHandleable)item;
+                        JavascriptHook.InvokeStreamOutEvent(new LocalHandle(data.LocalHandle), (int)EntityType.Blip);
+                        var obj = new Blip(data.LocalHandle);
+                        if (obj.Exists()) obj.Remove();
+                    }
                     break;
                 case EntityType.Pickup:
-                    StreamOutPickup((ILocalHandleable) item);
+                    {
+                        var data = (ILocalHandleable)item;
+                        JavascriptHook.InvokeStreamOutEvent(new LocalHandle(data.LocalHandle), (int)EntityType.Pickup);
+                        var obj = new Pickup(data.LocalHandle);
+                        if (obj.Exists()) obj.Delete();
+                    }
                     break;
                 case EntityType.Player:
-                    if (item is SyncPed)
+                    var ped = item as SyncPed;
+                    if (ped != null)
                     {
-                        JavascriptHook.InvokeStreamOutEvent(new LocalHandle(((SyncPed) item).Character?.Handle ?? 0), (int)EntityType.Player);
-                        ((SyncPed) item).Clear();
-                        ((SyncPed) item).StreamedIn = false;
+                        JavascriptHook.InvokeStreamOutEvent(new LocalHandle(ped.Character?.Handle ?? 0), (int)EntityType.Player);
+                        ped.Clear(); //TODO
                     }
                     break;
                 case EntityType.Marker:
@@ -1998,25 +2059,31 @@ namespace CherryMP.Networking
                     item.StreamedIn = false;
                     break;
                 case EntityType.Particle:
-                    StreamOutParticle((ILocalHandleable) item);
+                    {
+                        var data = (ILocalHandleable)item;
+                        JavascriptHook.InvokeStreamOutEvent(new LocalHandle(data.LocalHandle), (int)EntityType.Particle);
+                        Function.Call(Hash.REMOVE_PARTICLE_FX, data.LocalHandle, false);
+                    }
                     break;
             }
 
             item.StreamedIn = false;
 
-            if (item is ILocalHandleable)
+            lock (HandleMap)
             {
-                if (HandleMap.ContainsKey(item.RemoteHandle)) HandleMap.Remove(item.RemoteHandle);
-            }
-
-            if (item.Attachables != null)
-            {
-                foreach (var attachable in item.Attachables)
+                if (HandleMap.ContainsKey(item.RemoteHandle))
                 {
-                    var att = NetToStreamedItem(attachable);
-                    if (att != null) StreamOut(att);
+                    HandleMap.Remove(item.RemoteHandle);
                 }
             }
+
+            //if (item.Attachables == null) return;
+            //for (var index = item.Attachables.Count - 1; index >= 0; index--)
+            //{
+            //    var attachable = item.Attachables[index];
+            //    var att = NetToStreamedItem(attachable);
+            //    if (att != null) StreamOut(att);
+            //}
         }
 
         public void AttachEntityToEntity(IStreamedItem ent, IStreamedItem entTarget, Attachment info)
@@ -2182,17 +2249,18 @@ namespace CherryMP.Networking
             JavascriptHook.InvokeStreamInEvent(new LocalHandle(ourBlip.Handle), (int)EntityType.Blip);
         }
 
-        private void StreamInPed(RemotePed data)
+        private static void StreamInPed(RemotePed data)
         {
-            if (data == null || (object) data.Position == null || (object) data.Rotation == null) return;
             var model = new Model(data.ModelHash);
-            if (!model.IsValid || !model.IsInCdImage) return;
+            if (model == null || !model.IsValid || !model.IsInCdImage || data.Position == null || data.Rotation == null) return;
             if (!model.IsLoaded) Util.Util.LoadModel(model);
 
-            var ped = World.CreatePed(model, data.Position.ToVector(), data.Rotation.Z);
-            model.MarkAsNoLongerNeeded();
+            Ped ped = null;
+            if (model.IsLoaded) ped = World.CreatePed(model, data.Position.ToVector(), data.Rotation.Z);
 
-            if (ped == null)
+            //model.MarkAsNoLongerNeeded();
+
+            if (ped == null || !ped.Exists())
             {
                 data.StreamedIn = false;
                 return;
@@ -2208,9 +2276,7 @@ namespace CherryMP.Networking
             ped.CanRagdoll = false;
 
             Function.Call(Hash.SET_PED_DEFAULT_COMPONENT_VARIATION, ped);
-
             Function.Call(Hash.SET_PED_CAN_EVASIVE_DIVE, ped, false);
-
             Function.Call(Hash.SET_PED_CAN_BE_TARGETTED, ped, true);
             Function.Call(Hash.SET_PED_CAN_BE_TARGETTED_BY_PLAYER, ped, Game.Player, true);
             Function.Call(Hash.SET_PED_GET_OUT_UPSIDE_DOWN_VEHICLE, ped, false);
@@ -2221,12 +2287,10 @@ namespace CherryMP.Networking
 
             if (!string.IsNullOrEmpty(data.LoopingAnimation))
             {
-                string[] dictsplit = data.LoopingAnimation.Split();
+                var dictsplit = data.LoopingAnimation.Split();
                 if (dictsplit.Length >= 2)
                 {
-                    Function.Call(Hash.TASK_PLAY_ANIM, ped,
-                        Util.Util.LoadAnimDictStreamer(data.LoopingAnimation.Split()[0]), data.LoopingAnimation.Split()[1],
-                        8f, 10f, -1, 1, -8f, 1, 1, 1);
+                    Function.Call(Hash.TASK_PLAY_ANIM, ped, Util.Util.LoadAnimDictStreamer(data.LoopingAnimation.Split()[0]), data.LoopingAnimation.Split()[1], 8f, 10f, -1, 1, -8f, 1, 1, 1);
                 }
                 else
                 {
@@ -2236,6 +2300,8 @@ namespace CherryMP.Networking
 
             data.LocalHandle = ped.Handle;
             data.StreamedIn = true;
+
+            JavascriptHook.InvokeStreamInEvent(new LocalHandle(data.LocalHandle), (int)EntityType.Ped);
         }
 
         private void StreamInParticle(RemoteParticle data)
@@ -2293,32 +2359,24 @@ namespace CherryMP.Networking
 
         private void StreamInVehicle(RemoteVehicle data)
         {
-            if (data == null || (object) data.Position == null || (object) data.Rotation == null) return;
+            if ((object)data?.Position == null || (object)data.Rotation == null) return;
             var model = new Model(data.ModelHash);
             if (model == null || !model.IsValid || !model.IsInCdImage) return;
-            LogManager.DebugLog("CREATING VEHICLE FOR NETHANDLE " + data.RemoteHandle);
+
             if (!model.IsLoaded) Util.Util.LoadModel(model);
+
             Function.Call(Hash.REQUEST_COLLISION_AT_COORD, data.Position.X, data.Position.Y, data.Position.Z);
             Function.Call(Hash.REQUEST_ADDITIONAL_COLLISION_AT_COORD, data.Position.X, data.Position.Y, data.Position.Z);
-            LogManager.DebugLog("LOAD COMPLETE. AVAILABLE: " + model.IsLoaded);
 
-            LogManager.DebugLog("POSITION: " + data.Position?.ToVector());
-
-            var veh = World.CreateVehicle(model, data.Position.ToVector(), data.Rotation.Z);
-
-            LogManager.DebugLog("VEHICLE CREATED. NULL? " + (veh == null) + " EXISTS? " + (veh?.Exists()));
+            Vehicle veh = null;
+            if (model.IsLoaded) veh = World.CreateVehicle(model, data.Position.ToVector(), data.Rotation.Z);
 
             if (veh == null || !veh.Exists())
             {
-#if DEBUG
-                LogManager.LogException(
-                    new Exception("Vehicle was null or didnt spawn, model=" + model.Hash + ", loaded=" + model.IsLoaded +
-                                  ", vehicleHandle=" + (veh?.Handle)), "StreamInVehicle");
-#endif
                 data.StreamedIn = false;
                 return;
             }
-            
+
             data.LocalHandle = veh.Handle;
             veh.Rotation = data.Rotation.ToVector();
             veh.Mods.Livery = data.Livery;
@@ -2328,26 +2386,32 @@ namespace CherryMP.Networking
             Function.Call(Hash.SET_SIREN_WITH_NO_DRIVER, veh, true);
             Function.Call((Hash)0x068F64F2470F9656, false);
 
-            LogManager.DebugLog("LOCAL HANDLE: " + veh.Handle);
-            LogManager.DebugLog("POS: " + veh.Position);
-
             if ((data.PrimaryColor & 0xFF000000) > 0)
+            {
                 veh.Mods.CustomPrimaryColor = Color.FromArgb(data.PrimaryColor);
+            }
             else
+            {
                 veh.Mods.PrimaryColor = (VehicleColor)data.PrimaryColor;
+            }
 
             if ((data.SecondaryColor & 0xFF000000) > 0)
+            {
                 veh.Mods.CustomSecondaryColor = Color.FromArgb(data.SecondaryColor);
+            }
             else
+            {
                 veh.Mods.SecondaryColor = (VehicleColor)data.SecondaryColor;
+            }
 
-            veh.Mods.PearlescentColor = (VehicleColor)0;
-            veh.Mods.RimColor = (VehicleColor)0;
+            veh.Mods.PearlescentColor = 0;
+            veh.Mods.RimColor = 0;
             veh.EngineHealth = data.Health;
             veh.SirenActive = data.Siren;
             veh.Mods.LicensePlate = data.NumberPlate;
             veh.Mods.WheelType = 0;
-            veh.Wash();
+            //veh.Wash();
+
             Function.Call(Hash.SET_VEHICLE_NUMBER_PLATE_TEXT_INDEX, veh, 0);
             Function.Call(Hash.SET_VEHICLE_WINDOW_TINT, veh, 0);
 
@@ -2359,26 +2423,25 @@ namespace CherryMP.Networking
                     StreamIn(trailerId);
                     var trailer = new Vehicle(((RemoteVehicle)trailerId).LocalHandle);
 
-                    if ((VehicleHash)veh.Model.Hash == VehicleHash.TowTruck ||
-                                        (VehicleHash)veh.Model.Hash == VehicleHash.TowTruck2)
+                    switch ((VehicleHash)veh.Model.Hash)
                     {
-                        Function.Call(Hash.ATTACH_VEHICLE_TO_TOW_TRUCK, veh, trailer, true, 0, 0, 0);
-                    }
-                    else if ((VehicleHash)veh.Model.Hash == VehicleHash.Cargobob ||
-                             (VehicleHash)veh.Model.Hash == VehicleHash.Cargobob2 ||
-                             (VehicleHash)veh.Model.Hash == VehicleHash.Cargobob3 ||
-                             (VehicleHash)veh.Model.Hash == VehicleHash.Cargobob4)
-                    {
-                        veh.DropCargobobHook(CargobobHook.Hook);
-                        Function.Call(Hash.ATTACH_VEHICLE_TO_CARGOBOB, trailer, veh, 0, 0, 0, 0);
-                    }
-                    else
-                    {
-                        Function.Call(Hash.ATTACH_VEHICLE_TO_TRAILER, veh, trailer, 4f);
+                        case VehicleHash.TowTruck:
+                        case VehicleHash.TowTruck2:
+                            Function.Call(Hash.ATTACH_VEHICLE_TO_TOW_TRUCK, veh, trailer, true, 0, 0, 0);
+                            break;
+                        case VehicleHash.Cargobob:
+                        case VehicleHash.Cargobob2:
+                        case VehicleHash.Cargobob3:
+                        case VehicleHash.Cargobob4:
+                            veh.DropCargobobHook(CargobobHook.Hook);
+                            Function.Call(Hash.ATTACH_VEHICLE_TO_CARGOBOB, trailer, veh, 0, 0, 0, 0);
+                            break;
+                        default:
+                            Function.Call(Hash.ATTACH_VEHICLE_TO_TRAILER, veh, trailer, 4f);
+                            break;
                     }
                 }
             }
-
 
             Function.Call(Hash.SET_VEHICLE_MOD_KIT, veh, 0);
 
@@ -2391,13 +2454,14 @@ namespace CherryMP.Networking
                         if (data.Mods.ContainsKey((byte)i))
                         {
                             if (i >= 17 && i <= 22)
-                                veh.Mods[(VehicleToggleModType) i].IsInstalled = data.Mods[(byte)i] != 0;
+                                veh.Mods[(VehicleToggleModType)i].IsInstalled = data.Mods[(byte)i] != 0;
                             else
-                                veh.Mods[(VehicleModType) i].Index = data.Mods[(byte)i];
+                                veh.Mods[(VehicleModType)i].Index = data.Mods[(byte)i];
                         }
                         else
                         {
-                            Function.Call(Hash.REMOVE_VEHICLE_MOD, veh, i);
+                            //TODO CHECK clr.dll crash
+                            //Function.Call(Hash.REMOVE_VEHICLE_MOD, veh, i);
                         }
                     }
                     else
@@ -2413,18 +2477,15 @@ namespace CherryMP.Networking
                 Function.Call(Hash.EXPLODE_VEHICLE, veh, false, true);
             }
             else
+            {
                 veh.IsInvincible = data.IsInvincible;
+            }
 
-            if (data.Alpha < 255) veh.Opacity = (int)data.Alpha;
-            LogManager.DebugLog("ALPHA: " + veh.Opacity);
-
+            if (data.Alpha < 255) veh.Opacity = data.Alpha;
 
             Function.Call(Hash.SET_VEHICLE_CAN_BE_VISIBLY_DAMAGED, veh, false);
 
-            if (PacketOptimization.CheckBit(data.Flag, EntityFlag.Collisionless))
-            {
-                veh.IsCollisionEnabled = false;
-            }
+            if (PacketOptimization.CheckBit(data.Flag, EntityFlag.Collisionless)) veh.IsCollisionEnabled = false;
 
             if (PacketOptimization.CheckBit(data.Flag, EntityFlag.EngineOff))
             {
@@ -2440,8 +2501,7 @@ namespace CherryMP.Networking
             {
                 if (!Function.Call<bool>(Hash.DOES_EXTRA_EXIST, veh, i)) continue;
                 bool turnedOn = (data.VehicleComponents & 1 << i) != 0;
-                if (Function.Call<bool>(Hash.IS_VEHICLE_EXTRA_TURNED_ON, veh, i) ^ turnedOn)
-                    Function.Call(Hash.SET_VEHICLE_EXTRA, veh, i, turnedOn ? 0 : -1);
+                if (Function.Call<bool>(Hash.IS_VEHICLE_EXTRA_TURNED_ON, veh, i) ^ turnedOn) Function.Call(Hash.SET_VEHICLE_EXTRA, veh, i, turnedOn ? 0 : -1);
             }
 
             if (PacketOptimization.CheckBit(data.Flag, EntityFlag.SpecialLight))
@@ -2466,7 +2526,7 @@ namespace CherryMP.Networking
             {
                 if ((data.Doors & 1 << i) != 0)
                 {
-                    veh.Doors[(VehicleDoorIndex)i].Open(false, false);
+                    veh.Doors[(VehicleDoorIndex)i].Open();
                 }
             }
 
@@ -2480,26 +2540,16 @@ namespace CherryMP.Networking
 
             if (data.DamageModel != null) veh.SetVehicleDamageModel(data.DamageModel, false);
 
-            if (data.LocalOnly)
-            {
-                veh.LockStatus = VehicleLockStatus.CannotBeTriedToEnter;
-            }
+            if (data.LocalOnly) veh.LockStatus = VehicleLockStatus.CannotBeTriedToEnter;
 
-            if (PacketOptimization.CheckBit(data.Flag, EntityFlag.VehicleLocked))
-            {
-                veh.LockStatus = VehicleLockStatus.CannotBeTriedToEnter;
-            }
-            
+            if (PacketOptimization.CheckBit(data.Flag, EntityFlag.VehicleLocked)) veh.LockStatus = VehicleLockStatus.CannotBeTriedToEnter;
 
-            LogManager.DebugLog("PROPERTIES SET");
             data.StreamedIn = true;
-            LogManager.DebugLog("DISCARDING MODEL");
-            model.MarkAsNoLongerNeeded();
-            LogManager.DebugLog("CREATEVEHICLE COMPLETE");
+            //model.MarkAsNoLongerNeeded();
 
             JavascriptHook.InvokeStreamInEvent(new LocalHandle(veh.Handle), (int)EntityType.Vehicle);
         }
-    
+
 
         private void StreamInProp(RemoteProp data)
         {
@@ -2584,21 +2634,13 @@ namespace CherryMP.Networking
 
         public void ClearAll()
         {
-            LogManager.DebugLog("STARTING CLEARALL");
-
             lock (ClientMap)
             {
-                LogManager.DebugLog("HANDLEMAP LOCKED");
-                LogManager.DebugLog("HANDLEMAP SIZE: " + ClientMap.Count);
-
                 foreach (var pair in ClientMap.Values)
                 {
                     if (!pair.StreamedIn) continue;
-
-                    StreamOut(pair);                    
+                    StreamOut(pair);
                 }
-
-                LogManager.DebugLog("CLEARING LISTS");
                 ClientMap.Clear();
                 HandleMap.Clear();
                 _localHandleCounter = 0;

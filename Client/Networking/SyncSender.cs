@@ -19,8 +19,6 @@ namespace CherryMP.Networking
         private const int LIGHT_SYNC_RATE = 1500;
         private const int PURE_SYNC_RATE = 100;
 
-
-
         internal static void MainLoop()
         {
             bool lastPedData = false;
@@ -53,16 +51,15 @@ namespace CherryMP.Networking
                         msg.Write(bin.Length);
                         msg.Write(bin);
 
-                        try
-                        {
-                            Main.Client.SendMessage(msg, NetDeliveryMethod.UnreliableSequenced,
-                                (int) ConnectionChannel.PureSync);
-                        }
-                        catch (Exception ex)
-                        {
-                            Util.Util.SafeNotify("FAILED TO SEND DATA: " + ex.Message);
-                            LogManager.LogException(ex, "SENDPLAYERDATA");
-                        }
+                        //try
+                        //{
+                        Main.Client.SendMessage(msg, NetDeliveryMethod.UnreliableSequenced, (int)ConnectionChannel.PureSync);
+                        //}
+                        //catch (Exception ex)
+                        //{
+                        //    Util.Util.SafeNotify("FAILED TO SEND DATA: " + ex.Message);
+                        //    LogManager.LogException(ex, "SENDPLAYERDATA");
+                        //}
 
                         if (!lastPedData || Environment.TickCount - lastLightSyncSent > LIGHT_SYNC_RATE)
                         {
@@ -70,22 +67,21 @@ namespace CherryMP.Networking
 
                             LogManager.DebugLog("SENDING LIGHT VEHICLE SYNC");
 
-                            var lightBin = PacketOptimization.WriteLightSync((PedData) lastPacket);
+                            var lightBin = PacketOptimization.WriteLightSync((PedData)lastPacket);
 
                             var lightMsg = Main.Client.CreateMessage();
                             lightMsg.Write((byte) PacketType.PedLightSync);
                             lightMsg.Write(lightBin.Length);
                             lightMsg.Write(lightBin);
-                            try
-                            {
-                                Main.Client.SendMessage(lightMsg, NetDeliveryMethod.ReliableSequenced,
-                                    (int) ConnectionChannel.LightSync);
-                            }
-                            catch (Exception ex)
-                            {
-                                Util.Util.SafeNotify("FAILED TO SEND LIGHT DATA: " + ex.Message);
-                                LogManager.LogException(ex, "SENDPLAYERDATA");
-                            }
+                            //try
+                            //{
+                                Main.Client.SendMessage(lightMsg, NetDeliveryMethod.ReliableSequenced, (int) ConnectionChannel.LightSync);
+                            //}
+                            //catch (Exception ex)
+                            //{
+                            //    Util.Util.SafeNotify("FAILED TO SEND LIGHT DATA: " + ex.Message);
+                            //    LogManager.LogException(ex, "SENDPLAYERDATA");
+                            //}
 
                             Main._bytesSent += lightBin.Length;
                             Main._messagesSent++;
@@ -105,22 +101,21 @@ namespace CherryMP.Networking
                     }
                     else
                     {
-                        var bin = PacketOptimization.WritePureSync((VehicleData) lastPacket);
+                        var bin = PacketOptimization.WritePureSync((VehicleData)lastPacket);
 
                         var msg = Main.Client.CreateMessage();
-                        msg.Write((byte) PacketType.VehiclePureSync);
+                        msg.Write((byte)PacketType.VehiclePureSync);
                         msg.Write(bin.Length);
                         msg.Write(bin);
-                        try
-                        {
-                            Main.Client.SendMessage(msg, NetDeliveryMethod.UnreliableSequenced,
-                                (int) ConnectionChannel.PureSync);
-                        }
-                        catch (Exception ex)
-                        {
-                            Util.Util.SafeNotify("FAILED TO SEND DATA: " + ex.Message);
-                            LogManager.LogException(ex, "SENDPLAYERDATA");
-                        }
+                        //try
+                        //{
+                        Main.Client.SendMessage(msg, NetDeliveryMethod.UnreliableSequenced, (int)ConnectionChannel.PureSync);
+                        //}
+                        //catch (Exception ex)
+                        //{
+                        //    Util.Util.SafeNotify("FAILED TO SEND DATA: " + ex.Message);
+                        //    LogManager.LogException(ex, "SENDPLAYERDATA");
+                        //}
 
                         if (lastPedData || Environment.TickCount - lastLightSyncSent > LIGHT_SYNC_RATE)
                         {
@@ -131,19 +126,18 @@ namespace CherryMP.Networking
                             var lightBin = PacketOptimization.WriteLightSync((VehicleData)lastPacket);
 
                             var lightMsg = Main.Client.CreateMessage();
-                            lightMsg.Write((byte) PacketType.VehicleLightSync);
+                            lightMsg.Write((byte)PacketType.VehicleLightSync);
                             lightMsg.Write(lightBin.Length);
                             lightMsg.Write(lightBin);
-                            try
-                            {
-                                Main.Client.SendMessage(lightMsg, NetDeliveryMethod.ReliableSequenced,
-                                    (int) ConnectionChannel.LightSync);
-                            }
-                            catch (Exception ex)
-                            {
-                                Util.Util.SafeNotify("FAILED TO SEND LIGHT DATA: " + ex.Message);
-                                LogManager.LogException(ex, "SENDPLAYERDATA");
-                            }
+                            //try
+                            //{
+                            Main.Client.SendMessage(lightMsg, NetDeliveryMethod.ReliableSequenced, (int)ConnectionChannel.LightSync);
+                            //}
+                            //catch (Exception ex)
+                            //{
+                            //    Util.Util.SafeNotify("FAILED TO SEND LIGHT DATA: " + ex.Message);
+                            //    LogManager.LogException(ex, "SENDPLAYERDATA");
+                            //}
 
                             Main._bytesSent += lightBin.Length;
                             Main._messagesSent++;
@@ -174,7 +168,7 @@ namespace CherryMP.Networking
         }
     }
 
-    public class SyncCollector : Script
+    public partial class SyncCollector : Script
     {
         internal static bool ForceAimData;
         internal static object LastSyncPacket;
@@ -183,13 +177,12 @@ namespace CherryMP.Networking
         private static bool _lastShooting;
         private static bool _lastBullet;
         private static DateTime _lastShot;
+        private static bool _sent = true;
 
         public SyncCollector()
         {
-            var t = new Thread(SyncSender.MainLoop);
-            t.IsBackground = true;
+            var t = new Thread(SyncSender.MainLoop) { IsBackground = true };
             t.Start();
-
             Tick += OnTick;
         }
 
@@ -206,19 +199,21 @@ namespace CherryMP.Networking
                 var siren = veh.SirenActive;
                 var vehdead = veh.IsDead;
 
-                var obj = new VehicleData();
-                obj.Position = veh.Position.ToLVector();
-                obj.VehicleHandle = Main.NetEntityHandler.EntityToNet(player.CurrentVehicle.Handle);
-                obj.Quaternion = veh.Rotation.ToLVector();
-                obj.PedModelHash = player.Model.Hash;
-                obj.PlayerHealth = (byte) Util.Util.Clamp(0, player.Health, 255);
-                obj.VehicleHealth = veh.EngineHealth;
-                obj.Velocity = veh.Velocity.ToLVector();
-                obj.PedArmor = (byte)player.Armor;
-                obj.RPM = veh.CurrentRPM;
-                obj.VehicleSeat = (short)Util.Util.GetPedSeat(player);
-                obj.Flag = 0;
-                obj.Steering = veh.SteeringAngle;
+                var obj = new VehicleData
+                {
+                    Position = veh.Position.ToLVector(),
+                    VehicleHandle = Main.NetEntityHandler.EntityToNet(veh.Handle),
+                    Quaternion = veh.Rotation.ToLVector(),
+                    PedModelHash = player.Model.Hash,
+                    PlayerHealth = (byte)Util.Util.Clamp(0, player.Health, 255),
+                    VehicleHealth = veh.EngineHealth,
+                    Velocity = veh.Velocity.ToLVector(),
+                    PedArmor = (byte)player.Armor,
+                    RPM = veh.CurrentRPM,
+                    VehicleSeat = (short)Util.Util.GetPedSeat(player),
+                    Flag = 0,
+                    Steering = veh.SteeringAngle,
+                };
 
                 if (horn)
                     obj.Flag |= (byte)VehicleDataFlags.PressingHorn;
@@ -263,17 +258,19 @@ namespace CherryMP.Networking
                 }
                 else
                 {
-                    if ((player.IsSubtaskActive(200) || player.IsSubtaskActive(190)) &&
+                    bool usingVehicleWeapon = player.IsSubtaskActive(200) || player.IsSubtaskActive(190);
+
+                    if (usingVehicleWeapon &&
                         Game.IsEnabledControlPressed(0, Control.Attack) &&
-                        Game.Player.Character.Weapons.Current?.AmmoInClip != 0)
+                        player.Weapons.Current?.AmmoInClip != 0)
                     {
                         obj.Flag |= (byte)VehicleDataFlags.Shooting;
                         obj.Flag |= (byte)VehicleDataFlags.HasAimData;
                     }
 
-                    if (((player.IsSubtaskActive(200) || player.IsSubtaskActive(190)) &&
-                         Game.Player.Character.Weapons.Current?.AmmoInClip != 0) ||
-                        (Game.Player.Character.Weapons.Current?.Hash == WeaponHash.Unarmed &&
+                    if ((usingVehicleWeapon &&
+                         player.Weapons.Current?.AmmoInClip != 0) ||
+                        (player.Weapons.Current?.Hash == WeaponHash.Unarmed &&
                          player.IsSubtaskActive(200)))
                     {
                         obj.Flag |= (byte)VehicleDataFlags.Aiming;
@@ -281,16 +278,16 @@ namespace CherryMP.Networking
                     }
 
                     var outputArg = new OutputArgument();
-                    Function.Call(Hash.GET_CURRENT_PED_WEAPON, Game.Player.Character, outputArg, true);
+                    Function.Call(Hash.GET_CURRENT_PED_WEAPON, player, outputArg, true);
                     obj.WeaponHash = outputArg.GetResult<int>();
 
                     lock (Lock)
                     {
                         if (LastSyncPacket != null && LastSyncPacket is VehicleData &&
                             WeaponDataProvider.NeedsFakeBullets(obj.WeaponHash.Value) &&
-                            (((VehicleData) LastSyncPacket).Flag & (byte) VehicleDataFlags.Shooting) != 0)
+                            (((VehicleData)LastSyncPacket).Flag & (byte)VehicleDataFlags.Shooting) != 0)
                         {
-                            obj.Flag |= (byte) VehicleDataFlags.Shooting;
+                            obj.Flag |= (byte)VehicleDataFlags.Shooting;
                             obj.Flag |= (byte)VehicleDataFlags.HasAimData;
                         }
                     }
@@ -334,18 +331,21 @@ namespace CherryMP.Networking
                     aimCoord = Main.RaycastEverything(new Vector2(0, 0));
                 }
 
-                var obj = new PedData();
-                obj.AimCoords = aimCoord.ToLVector();
-                obj.Position = player.Position.ToLVector();
-                obj.Quaternion = player.Rotation.ToLVector();
-                obj.PedArmor = (byte)player.Armor;
-                obj.PedModelHash = player.Model.Hash;
-                obj.WeaponHash = (int)player.Weapons.Current.Hash;
-                obj.WeaponAmmo = player.Weapons.Current.Ammo;
-                obj.PlayerHealth = (byte)Util.Util.Clamp(0, player.Health, 255);
-                obj.Velocity = player.Velocity.ToLVector();
+                Weapon currentWeapon = player.Weapons.Current;
 
-                obj.Flag = 0;
+                var obj = new PedData
+                {
+                    AimCoords = aimCoord.ToLVector(),
+                    Position = player.Position.ToLVector(),
+                    Quaternion = player.Rotation.ToLVector(),
+                    PedArmor = (byte)player.Armor,
+                    PedModelHash = player.Model.Hash,
+                    WeaponHash = (int)currentWeapon.Hash,
+                    WeaponAmmo = currentWeapon.Ammo,
+                    PlayerHealth = (byte)Util.Util.Clamp(0, player.Health, 255),
+                    Velocity = player.Velocity.ToLVector(),
+                    Flag = 0
+                };
 
                 if (player.IsRagdoll)
                     obj.Flag |= (int)PedDataFlags.Ragdoll;
@@ -409,10 +409,9 @@ namespace CherryMP.Networking
 
                 bool sendShootingPacket;
 
-                if (!WeaponDataProvider.IsWeaponAutomatic(unchecked ((CherryMPShared.WeaponHash) obj.WeaponHash.Value)))
+                if (obj.WeaponHash != null && !WeaponDataProvider.IsWeaponAutomatic(unchecked((CherryMPShared.WeaponHash)obj.WeaponHash.Value)))
                 {
-                    sendShootingPacket = (shooting && !player.IsSubtaskActive(ESubtask.AIMING_PREVENTED_BY_OBSTACLE) &&
-                                          !player.IsSubtaskActive(ESubtask.MELEE_COMBAT));
+                    sendShootingPacket = (shooting && !player.IsSubtaskActive(ESubtask.AIMING_PREVENTED_BY_OBSTACLE) && !player.IsSubtaskActive(ESubtask.MELEE_COMBAT));
                 }
                 else
                 {
@@ -420,7 +419,7 @@ namespace CherryMP.Networking
                     {
                         sendShootingPacket = (shooting && !player.IsSubtaskActive(ESubtask.AIMING_PREVENTED_BY_OBSTACLE) &&
                                               !player.IsSubtaskActive(ESubtask.MELEE_COMBAT)) ||
-                                              ((player.IsInMeleeCombat || player.IsSubtaskActive(ESubtask.MELEE_COMBAT)) &&
+                                             ((player.IsInMeleeCombat || player.IsSubtaskActive(ESubtask.MELEE_COMBAT)) &&
                                               Game.IsEnabledControlPressed(0, Control.Attack));
                     }
                     else
@@ -437,28 +436,29 @@ namespace CherryMP.Networking
                     if (!sendShootingPacket && _lastShooting && !_lastBullet)
                     {
                         _lastBullet = true;
+                        _lastShooting = false;
                         return;
                     }
                 }
 
                 _lastBullet = false;
 
-                if (Game.Player.Character.IsRagdoll)
-                    sendShootingPacket = false;
+                if (player.IsRagdoll) sendShootingPacket = false;
 
-                if (!player.IsSubtaskActive(ESubtask.MELEE_COMBAT) && player.Weapons.Current.Ammo == 0)
-                    sendShootingPacket = false;
+                if (!player.IsSubtaskActive(ESubtask.MELEE_COMBAT) && player.Weapons.Current.Ammo == 0) sendShootingPacket = false;
 
-                
-                if (sendShootingPacket && !_lastShooting)
+                if (sendShootingPacket && !_lastShooting && DateTime.Now.Subtract(_lastShot).TotalMilliseconds > 50)
                 {
+                    Util.Util.SafeNotify("Sending BPacket " + DateTime.Now.Millisecond);
+                    _sent = false;
                     _lastShooting = true;
-
                     _lastShot = DateTime.Now;
 
                     var msg = Main.Client.CreateMessage();
                     byte[] bin = null;
-                    SyncPed syncPlayer = null;
+                    //SyncPed syncPlayer = null;
+
+                    var syncPlayer = Main.GetPedWeHaveDamaged();
 
                     if (Main.OnShootingLagCompensation)
                         syncPlayer = Main.GetPedDamagedByPlayer();
@@ -478,34 +478,24 @@ namespace CherryMP.Networking
                     msg.Write(bin);
 
                     Main.Client.SendMessage(msg, NetDeliveryMethod.ReliableOrdered, (int)ConnectionChannel.BulletSync);
-
                     Main._bytesSent += bin.Length;
                     Main._messagesSent++;
                 }
-                else if (!sendShootingPacket && _lastShooting && DateTime.Now.Subtract(_lastShot).TotalMilliseconds > 50)
+                else if (!sendShootingPacket && !_sent && DateTime.Now.Subtract(_lastShot).TotalMilliseconds > 50)
                 {
+                    Util.Util.SafeNotify("Sending NPacket " + DateTime.Now.Millisecond);
+                    _sent = true;
                     _lastShooting = false;
+                    _lastShot = DateTime.Now;
 
                     var msg = Main.Client.CreateMessage();
-                    byte[] bin = null;
-                    SyncPed syncPlayer = null;
-                    if (Main.OnShootingLagCompensation)
-                        syncPlayer = Main.GetPedDamagedByPlayer();
-                    if (syncPlayer != null)
-                    {
-                        bin = PacketOptimization.WriteBulletSync(0, false, syncPlayer.RemoteHandle);
-                        msg.Write((byte)PacketType.BulletPlayerSync);
-                    }
-                    else
-                    {
-                        bin = PacketOptimization.WriteBulletSync(0, false, aimCoord.ToLVector());
-                        msg.Write((byte)PacketType.BulletSync);
-                    }
+
+                    byte[] bin = PacketOptimization.WriteBulletSync(0, false, aimCoord.ToLVector());
+                    msg.Write((byte)PacketType.BulletSync);
+
                     msg.Write(bin.Length);
                     msg.Write(bin);
-
                     Main.Client.SendMessage(msg, NetDeliveryMethod.ReliableOrdered, (int)ConnectionChannel.BulletSync);
-
                     Main._bytesSent += bin.Length;
                     Main._messagesSent++;
                 }

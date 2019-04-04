@@ -126,8 +126,7 @@ namespace CherryMP.Networking
                                 if (!veh.Windows[(VehicleWindowIndex)i].IsIntact) BrokenWindows |= (byte)(1 << i);
                             }
 
-                            var syncUnocVeh = dist > 2f ||
-                                          ent.Rotation.DistanceToSquared(vehicle.Rotation.ToVector()) > 2f ||
+                            var syncUnocVeh = dist > 2f || ent.Rotation.DistanceToSquared(vehicle.Rotation.ToVector()) > 2f ||
                                           Math.Abs(new Vehicle(ent.Handle).EngineHealth - vehicle.Health) > 1f ||
                                           Util.Util.BuildTyreFlag(new Vehicle(ent.Handle)) != vehicle.Tires ||
                                           vehicle.DamageModel == null ||
@@ -192,7 +191,7 @@ namespace CherryMP.Networking
                         msg.Write(buffer.Count);
                         msg.Write(buffer.ToArray());
 
-                        Main.Client.SendMessage(msg, NetDeliveryMethod.UnreliableSequenced, (int)ConnectionChannel.UnoccupiedVeh);
+                        Main.Client.SendMessage(msg, NetDeliveryMethod.Unreliable, (int)ConnectionChannel.UnoccupiedVeh);
 
                         Main._bytesSent += buffer.Count;
                         Main._messagesSent++;
@@ -200,7 +199,7 @@ namespace CherryMP.Networking
                 }
             }
 
-            for (int i = Interpolations.Count - 1; i >= 0; i--)
+            for (int i = 0; i < Interpolations.Count; i++)
             {
                 var pair = Interpolations.ElementAt(i);
 
