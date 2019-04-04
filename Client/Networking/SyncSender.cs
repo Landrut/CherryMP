@@ -202,7 +202,7 @@ namespace CherryMP.Networking
                 var obj = new VehicleData
                 {
                     Position = veh.Position.ToLVector(),
-                    VehicleHandle = Main.NetEntityHandler.EntityToNet(veh.Handle),
+                    VehicleHandle = Main.NetEntityHandler.EntityToNet(player.CurrentVehicle.Handle),
                     Quaternion = veh.Rotation.ToLVector(),
                     PedModelHash = player.Model.Hash,
                     PlayerHealth = (byte)Util.Util.Clamp(0, player.Health, 255),
@@ -210,7 +210,7 @@ namespace CherryMP.Networking
                     Velocity = veh.Velocity.ToLVector(),
                     PedArmor = (byte)player.Armor,
                     RPM = veh.CurrentRPM,
-                    VehicleSeat = (short)Util.Util.GetPedSeat(player),
+                    VehicleSeat = (short)player.GetPedSeat(),
                     Flag = 0,
                     Steering = veh.SteeringAngle,
                 };
@@ -224,7 +224,7 @@ namespace CherryMP.Networking
                 if (player.IsDead)
                     obj.Flag |= (short) VehicleDataFlags.PlayerDead;
 
-                if (Util.Util.GetResponsiblePed(veh).Handle == player.Handle)
+                if (veh.GetResponsiblePed().Handle == player.Handle)
                     obj.Flag |= (byte)VehicleDataFlags.Driver;
 
                 if (veh.IsInBurnout)
@@ -238,9 +238,9 @@ namespace CherryMP.Networking
                     obj.Flag |= (short) VehicleDataFlags.ExitingVehicle;
                 }
 
-                if (!WeaponDataProvider.DoesVehicleSeatHaveGunPosition((VehicleHash)veh.Model.Hash, Util.Util.GetPedSeat(Game.Player.Character)) &&
+                if (!WeaponDataProvider.DoesVehicleSeatHaveGunPosition((VehicleHash)veh.Model.Hash, Game.Player.Character.GetPedSeat()) &&
                     WeaponDataProvider.DoesVehicleSeatHaveMountedGuns((VehicleHash)veh.Model.Hash) &&
-                    Util.Util.GetPedSeat(Game.Player.Character) == -1)
+                    Game.Player.Character.GetPedSeat() == -1)
                 {
                     obj.Flag |= (byte)VehicleDataFlags.HasAimData;
                     obj.AimCoords = new CherryMPShared.Vector3(0, 0, 0);
@@ -248,7 +248,7 @@ namespace CherryMP.Networking
                     if (Game.IsEnabledControlPressed(0, Control.VehicleFlyAttack))
                         obj.Flag |= (byte)VehicleDataFlags.Shooting;
                 }
-                else if (WeaponDataProvider.DoesVehicleSeatHaveGunPosition((VehicleHash)veh.Model.Hash, Util.Util.GetPedSeat(Game.Player.Character)))
+                else if (WeaponDataProvider.DoesVehicleSeatHaveGunPosition((VehicleHash)veh.Model.Hash, Game.Player.Character.GetPedSeat()))
                 {
                     obj.Flag |= (byte)VehicleDataFlags.HasAimData;
                     obj.WeaponHash = 0;
@@ -312,7 +312,7 @@ namespace CherryMP.Networking
                     obj.Trailer = trailer.Position.ToLVector();
                 }
 
-                if (Util.Util.GetResponsiblePed(veh) == player)
+                if (veh.GetResponsiblePed() == player)
                     obj.DamageModel = veh.GetVehicleDamageModel();
 
                 lock (Lock)

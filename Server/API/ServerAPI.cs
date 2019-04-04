@@ -41,6 +41,8 @@ namespace CherryMPServer
             get { return DateTime.Now.Ticks / 10000; }
         }
 
+
+
         public string getResourceFolder()
         {
             if (ResourceParent == null)
@@ -1079,6 +1081,19 @@ namespace CherryMPServer
             }
 
             return new NetHandle();
+        }
+
+        public Client getVehicleDriver(NetHandle vehicle)
+        {
+            foreach (Client player in getVehicleOccupants(vehicle))
+            {
+                if (getPlayerVehicleSeat(player) == -1)
+                {
+                    return player;
+                }
+            }
+
+            return null;
         }
 
         public bool getVehicleSirenState(NetHandle vehicle)

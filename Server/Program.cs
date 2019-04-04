@@ -153,8 +153,7 @@ namespace CherryMPServer
                 return;
             }
 
-            ServerInstance = new GameServer(settings);
-            ServerInstance.AllowDisplayNames = true;
+            ServerInstance = new GameServer(settings) { AllowDisplayNames = true };
 
             ServerInstance.Start(settings.Resources.Select(r => r.Path).ToArray());
 
@@ -164,20 +163,16 @@ namespace CherryMPServer
             while (!CloseProgram)
             {
                 ServerInstance.Tick();
-                Thread.Sleep(1000/settings.RefreshHz);
+                Thread.Sleep(1000 / 60);
             }
 
         }
 
         private static bool Handler(CtrlType sig)
         {
-            Program.Output("Terminating...");
+            Output("Terminating...");
             ServerInstance.IsClosing = true;
-            DateTime start = DateTime.Now;
-            while (!ServerInstance.ReadyToClose)
-            {
-                Thread.Sleep(10);
-            }
+            while (!ServerInstance.ReadyToClose) { Thread.Sleep(10); }
             CloseProgram = true;
             Console.WriteLine("Terminated.");
             return true;
@@ -195,13 +190,13 @@ namespace CherryMPServer
         public static bool masterExit = false;
         private static void setupHandlers()
         {
-            Thread newthread = new Thread(new ThreadStart(sigHan));
+            var newthread = new Thread(sigHan);
             newthread.Start();
         }
 
         private static void sigHan()
         {
-            UnixSignal[] signals = new UnixSignal[] {
+            UnixSignal[] signals = {
                 new UnixSignal (Signum.SIGINT),
                 new UnixSignal (Signum.SIGTERM),
                 new UnixSignal (Signum.SIGQUIT),
@@ -209,8 +204,8 @@ namespace CherryMPServer
 
             while (!masterExit)
             {
-                int index = UnixSignal.WaitAny(signals, -1);
-                Signum signal = signals[index].Signum;
+                var index = UnixSignal.WaitAny(signals, -1);
+                var signal = signals[index].Signum;
                 sigHandler(signal);
             };
         }
@@ -220,17 +215,40 @@ namespace CherryMPServer
             switch (signal)
             {
                 case Signum.SIGINT:    // Control-C
-                    Console.WriteLine("Processing SIGINT Signal");
-                    masterExit = true;
-                    break;
                 case Signum.SIGTERM:
-                    Console.WriteLine("Processing SIGTERM Signal");
-                    masterExit = true;
-                    break;
                 case Signum.SIGQUIT:
-                    Console.WriteLine("Processing SIGQUIT Signal");
+                case Signum.SIGHUP:
+                case Signum.SIGILL:
+                case Signum.SIGTRAP:
+                case Signum.SIGABRT:
+                case Signum.SIGBUS:
+                case Signum.SIGFPE:
+                case Signum.SIGKILL:
+                case Signum.SIGUSR1:
+                case Signum.SIGSEGV:
+                case Signum.SIGUSR2:
+                case Signum.SIGPIPE:
+                case Signum.SIGALRM:
+                case Signum.SIGSTKFLT:
+                case Signum.SIGCLD:
+                case Signum.SIGCONT:
+                case Signum.SIGSTOP:
+                case Signum.SIGTSTP:
+                case Signum.SIGTTIN:
+                case Signum.SIGTTOU:
+                case Signum.SIGURG:
+                case Signum.SIGXCPU:
+                case Signum.SIGXFSZ:
+                case Signum.SIGVTALRM:
+                case Signum.SIGPROF:
+                case Signum.SIGWINCH:
+                case Signum.SIGPOLL:
+                case Signum.SIGPWR:
+                case Signum.SIGSYS:
                     masterExit = true;
                     break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(signal), signal, null);
             }
 
             if (masterExit)

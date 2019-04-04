@@ -200,6 +200,10 @@
     <Compile Include="GUI\TabWelcomeMessageItem.cs" />
     <Compile Include="GUI\IChat.cs" />
     <Compile Include="GUI\Warning.cs" />
+    <Compile Include="Util\Extensions\EntityExtensions.cs" />
+    <Compile Include="Util\Extensions\PedExtensions.cs" />
+    <Compile Include="Util\Extensions\Vector3Extensions.cs" />
+    <Compile Include="Util\Extensions\VehicleExtensions.cs" />
     <Compile Include="Util\InputboxThread.cs" />
     <Compile Include="Util\Interpolator.cs" />
     <Compile Include="Javascript\JavascriptChat.cs" />

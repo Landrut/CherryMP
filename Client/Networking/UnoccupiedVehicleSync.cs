@@ -9,6 +9,59 @@ using Vector3 = GTA.Math.Vector3;
 
 namespace CherryMP.Networking
 {
+
+    public class UnoccupiedVehSync : Script
+    {
+        public UnoccupiedVehSync() { Tick += OnTick; }
+
+        private static long _lastTick;
+        private static void OnTick(object sender, EventArgs e)
+        {
+            //CallCollection thisCol = new CallCollection();
+            if (Main.IsOnServer() && Util.Util.TickCount - _lastTick > 1000) // Save ressource
+            {
+                _lastTick = Util.Util.TickCount;
+                if (StreamerThread.StreamedInVehicles == null || StreamerThread.StreamedInVehicles.Length == 0) return;
+
+                RemoteVehicle[] myCars;
+                lock (StreamerThread.StreamedInVehicles) { myCars = StreamerThread.StreamedInVehicles.Take(50).ToArray(); }
+
+                for (var index = myCars.Length - 1; index >= 0; index--)
+                {
+                    var remoteEntity = myCars[index];
+                    if (remoteEntity == null) continue;
+
+                    var localEntity = new Vehicle(remoteEntity.LocalHandle);
+
+                    var isEmpty = VehicleExtensions.IsVehicleEmpty(localEntity);
+                    var isIntepolating = Main.VehicleSyncManager.IsInterpolating(localEntity.Handle);
+                    var isTrailered = remoteEntity.TraileredBy != 0;
+                    var isSyncing = Main.VehicleSyncManager.IsSyncing(remoteEntity);
+                    var isLastVeh = localEntity.Handle == Game.Player.LastVehicle?.Handle;
+                    var isLastVehTimeout = DateTime.Now.Subtract(Main.LastCarEnter).TotalMilliseconds > 3000;
+                    var isFar = localEntity.Position.DistanceToSquared(remoteEntity.Position.ToVector()) > 2f;
+
+                    //if (Util.Util.IsVehicleEmpty(entity) && !Main.VehicleSyncManager.IsInterpolating(entity.Handle) &&
+                    //    entity_.TraileredBy == 0 && !Main.VehicleSyncManager.IsSyncing(entity_) &&
+                    //    ((entity.Handle == Game.Player.LastVehicle?.Handle && DateTime.Now.Subtract(Events.LastCarEnter).TotalMilliseconds > 3000) ||
+                    //     entity.Handle != Game.Player.LastVehicle?.Handle))
+
+                    if (isEmpty && !isIntepolating && !isTrailered && !isSyncing && isLastVeh && isFar)
+                    {
+                        localEntity.PositionNoOffset = remoteEntity.Position.ToVector();
+                        localEntity.Rotation = remoteEntity.Rotation.ToVector();
+                        //thisCol.Call(Hash.SET_ENTITY_ROTATION, localEntity, value.X, value.Y, value.Z, 2, 1);
+                    }
+
+                    //veh.Position = entity.Position.ToLVector();
+                    //veh.Rotation = entity.Rotation.ToLVector();
+                }
+            }
+
+        }
+
+    }
+
     internal class UnoccupiedVehicleSync
     {
         private List<RemoteVehicle> SyncedVehicles = new List<RemoteVehicle>();

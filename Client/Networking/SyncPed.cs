@@ -595,7 +595,7 @@ namespace CherryMP.Networking
 	    bool CreateVehicle()
 	    {
 	        var PlayerChar = Game.Player.Character;
-            if (_isInVehicle && MainVehicle != null && Character.IsInVehicle(MainVehicle) && PlayerChar.IsInVehicle(MainVehicle) && VehicleSeat == -1 && Function.Call<int>(Hash.GET_SEAT_PED_IS_TRYING_TO_ENTER, PlayerChar) == -1 && Util.Util.GetPedSeat(PlayerChar) == 0)
+            if (_isInVehicle && MainVehicle != null && Character.IsInVehicle(MainVehicle) && PlayerChar.IsInVehicle(MainVehicle) && VehicleSeat == -1 && Function.Call<int>(Hash.GET_SEAT_PED_IS_TRYING_TO_ENTER, PlayerChar) == -1 && PlayerChar.GetPedSeat() == 0)
             {
                 Character.Task.WarpOutOfVehicle(MainVehicle);
                 PlayerChar.Task.WarpIntoVehicle(MainVehicle, GTA.VehicleSeat.Driver);
@@ -604,7 +604,7 @@ namespace CherryMP.Networking
                 return true;
             }
 
-            var createVehicle = !_lastVehicle && _isInVehicle || _lastVehicle && _isInVehicle && (MainVehicle == null || !Character.IsInVehicle(MainVehicle) && PlayerChar.VehicleTryingToEnter != MainVehicle || VehicleSeat != Util.Util.GetPedSeat(Character) && PlayerChar.VehicleTryingToEnter != MainVehicle);
+            var createVehicle = !_lastVehicle && _isInVehicle || _lastVehicle && _isInVehicle && (MainVehicle == null || !Character.IsInVehicle(MainVehicle) && PlayerChar.VehicleTryingToEnter != MainVehicle || VehicleSeat != Character.GetPedSeat() && PlayerChar.VehicleTryingToEnter != MainVehicle);
 
             if (!Debug && MainVehicle != null)
             {
@@ -620,7 +620,7 @@ namespace CherryMP.Networking
                 return true;
             }
 
-            if (PlayerChar.IsInVehicle(MainVehicle) && VehicleSeat == Util.Util.GetPedSeat(PlayerChar))
+            if (PlayerChar.IsInVehicle(MainVehicle) && VehicleSeat == PlayerChar.GetPedSeat())
             {
                 if (DateTime.Now.Subtract(Main.LastCarEnter).TotalMilliseconds < 1000) return true;
 
@@ -1298,7 +1298,7 @@ namespace CherryMP.Networking
                 Character.Weapons.RemoveAll();
 			    var p = IsInVehicle ? Position : Position;
 
-			    Util.Util.LoadWeapon(CurrentWeapon);
+                Character.LoadWeapon(CurrentWeapon);
 
                 var wObj = Function.Call<int>(Hash.CREATE_WEAPON_OBJECT, CurrentWeapon, 999, p.X, p.Y, p.Z, true, 0, 0);
                 

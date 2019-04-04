@@ -307,7 +307,7 @@ namespace CherryMPShared
 
             // Write vehicle's nethandle.
             byteArray.AddRange(GetBytes(data.VehicleHandle.Value));
-            
+
             // Write vehicle position, rotation and velocity
             byteArray.AddRange(GetBytes(data.Position.X));
             byteArray.AddRange(GetBytes(data.Position.Y));
@@ -344,6 +344,7 @@ namespace CherryMPShared
             return byteArray.ToArray();
         }
 
+
         public static byte[] WriteBasicUnOccupiedVehicleSync(VehicleData data)
         {
             List<byte> byteArray = new List<byte>();
@@ -357,7 +358,7 @@ namespace CherryMPShared
             byteArray.AddRange(GetBytes(data.Position.Z));
 
             byteArray.AddRange(GetBytes(data.Quaternion.Z));
-            
+
             // Write vehicle health
             byteArray.AddRange(GetBytes((short)((int)data.VehicleHealth.Value)));
 

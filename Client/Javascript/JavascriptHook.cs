@@ -1988,7 +1988,7 @@ namespace CherryMP.Javascript
 
             if (slot >= 60)
             {
-                Util.Util.SetNonStandardVehicleMod(new Vehicle(vehicle.Value), slot, modType);
+                new Vehicle(vehicle.Value).SetNonStandardVehicleMod(slot, modType);
             }
             else
             {
@@ -2278,7 +2278,7 @@ namespace CherryMP.Javascript
 
         public void setPlayerSkin(int model)
         {
-            Util.Util.SetPlayerSkin((PedHash)model);
+            Game.Player.Character.SetPlayerSkin((PedHash)model);
             setPlayerDefaultClothes();
         }
 
@@ -2606,7 +2606,7 @@ namespace CherryMP.Javascript
 
         public int getPlayerVehicleSeat(LocalHandle player)
         {
-            return Util.Util.GetPedSeat(new Ped(player.Value));
+            return new Ped(player.Value).GetPedSeat();
         }
 
         public bool getPlayerSeatbelt(LocalHandle player)

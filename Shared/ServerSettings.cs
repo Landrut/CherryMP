@@ -98,12 +98,12 @@ namespace CherryMPShared
         {
             Port = 4499;
             MaxPlayers = 50;
-            Name = "Simple Cherry Multiplayer Server";
+            Name = "Cherry Multiplayer Server";
             MinimumClientVersion = "0.0.0.0";
             Password = "";
             LogToFile = true;
             Announce = true;
-            UseACL = true;
+            UseACL = false;
             AnnounceToLan = true;
             AutoUpdateMinClientVersion = true;
             MasterServer = "http://master.gtanet.work";

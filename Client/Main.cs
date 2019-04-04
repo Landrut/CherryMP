@@ -141,7 +141,7 @@ namespace CherryMP
 
         private DebugWindow _debug;
         private SyncEventWatcher Watcher;
-        internal UnoccupiedVehicleSync VehicleSyncManager;
+        internal static UnoccupiedVehicleSync VehicleSyncManager;
         internal WeaponManager WeaponInventoryManager;
 
         private Vector3 _vinewoodSign = new Vector3(827.74f, 1295.68f, 364.34f);
@@ -2517,7 +2517,7 @@ namespace CherryMP
                 var obj = new VehicleData
                 {
                     Position = veh.Position.ToLVector(),
-                    VehicleHandle = Main.NetEntityHandler.EntityToNet(veh.Handle),
+                    VehicleHandle = Main.NetEntityHandler.EntityToNet(player.CurrentVehicle.Handle),
                     Quaternion = veh.Rotation.ToLVector(),
                     PedModelHash = player.Model.Hash,
                     PlayerHealth = (byte)Util.Util.Clamp(0, player.Health, 255),
@@ -2525,7 +2525,7 @@ namespace CherryMP
                     Velocity = veh.Velocity.ToLVector(),
                     PedArmor = (byte)player.Armor,
                     RPM = veh.CurrentRPM,
-                    VehicleSeat = (short)Util.Util.GetPedSeat(player),
+                    VehicleSeat = (short)player.GetPedSeat(),
                     Flag = 0,
                     Steering = veh.SteeringAngle,
                 };
@@ -2546,9 +2546,9 @@ namespace CherryMP
                     obj.Flag |= (byte)VehicleDataFlags.BurnOut;
 
                 // DUBSTEP
-                if (!WeaponDataProvider.DoesVehicleSeatHaveGunPosition((VehicleHash)veh.Model.Hash, Util.Util.GetPedSeat(player)) &&
+                if (!WeaponDataProvider.DoesVehicleSeatHaveGunPosition((VehicleHash)veh.Model.Hash, player.GetPedSeat()) &&
                 WeaponDataProvider.DoesVehicleSeatHaveMountedGuns((VehicleHash)veh.Model.Hash) &&
-                Util.Util.GetPedSeat(player) == -1)
+                player.GetPedSeat() == -1)
                 {
                     obj.Flag |= (byte)VehicleDataFlags.HasAimData;
                     obj.AimCoords = new CherryMPShared.Vector3(0, 0, 0);
@@ -2556,7 +2556,7 @@ namespace CherryMP
                     if (Game.IsEnabledControlPressed(0, Control.VehicleFlyAttack))
                         obj.Flag |= (byte)VehicleDataFlags.Shooting;
                 }
-                else if (WeaponDataProvider.DoesVehicleSeatHaveGunPosition((VehicleHash)veh.Model.Hash, Util.Util.GetPedSeat(player)))
+                else if (WeaponDataProvider.DoesVehicleSeatHaveGunPosition((VehicleHash)veh.Model.Hash, player.GetPedSeat()))
                 {
                     obj.Flag |= (byte)VehicleDataFlags.HasAimData;
                     obj.WeaponHash = 0;
@@ -3504,7 +3504,7 @@ namespace CherryMP
 
                 if (playerCar != null)
                 {
-                    if (Util.Util.GetResponsiblePed(playerCar).Handle == player.Handle)
+                    if (playerCar.GetResponsiblePed().Handle == player.Handle)
                     {
                         playerCar.IsInvincible = cc?.IsInvincible ?? false;
                     }
@@ -3919,34 +3919,40 @@ namespace CherryMP
 
                 _lastKilled = killed;
 
-                Function.Call(Hash.SET_RANDOM_TRAINS, 0);
-                Function.Call(Hash.CAN_CREATE_RANDOM_COPS, false);
+                var collection = new CallCollection();
+
+                collection.Call(Hash.SET_RANDOM_TRAINS, 0);
+                collection.Call(Hash.CAN_CREATE_RANDOM_COPS, false);
+
+                collection.Call(Hash.SET_VEHICLE_DENSITY_MULTIPLIER_THIS_FRAME, 0f);
+
+                collection.Call(Hash.SET_VEHICLE_POPULATION_BUDGET, 0);
+                collection.Call(Hash.SET_PED_POPULATION_BUDGET, 0);
+
+                collection.Call(Hash.SUPPRESS_SHOCKING_EVENTS_NEXT_FRAME);
+                collection.Call(Hash.SUPPRESS_AGITATION_EVENTS_NEXT_FRAME);
+
+
+
+                collection.Call(Hash.SET_RANDOM_VEHICLE_DENSITY_MULTIPLIER_THIS_FRAME, 0f);
+                collection.Call(Hash.SET_PARKED_VEHICLE_DENSITY_MULTIPLIER_THIS_FRAME, 0f);
+                collection.Call(Hash.SET_NUMBER_OF_PARKED_VEHICLES, -1);
+                collection.Call(Hash.SET_ALL_LOW_PRIORITY_VEHICLE_GENERATORS_ACTIVE, false);
+                collection.Call(Hash.SET_FAR_DRAW_VEHICLES, false);
+                collection.Call(Hash.DESTROY_MOBILE_PHONE);
+                collection.Call((Hash)0x015C49A93E3E086E, true);
+                collection.Call(Hash.SET_PED_DENSITY_MULTIPLIER_THIS_FRAME, 0f);
+                collection.Call(Hash.SET_SCENARIO_PED_DENSITY_MULTIPLIER_THIS_FRAME, 0f, 0f);
+                collection.Call(Hash.SET_CAN_ATTACK_FRIENDLY, Game.Player.Character, true, true);
+                collection.Call(Hash.SET_PED_CAN_BE_TARGETTED, Game.Player.Character, true);
+                collection.Call((Hash)0xF796359A959DF65D, false); // Display distant vehicles
+                collection.Call(Hash.SET_AUTO_GIVE_PARACHUTE_WHEN_ENTER_PLANE, Game.Player, false);
+                collection.Call((Hash)0xD2B315B6689D537D, Game.Player, false);
+                collection.Call(Hash.DISPLAY_CASH, false);
+                collection.Execute();
+
                 DEBUG_STEP = 29;
-                Function.Call(Hash.SET_VEHICLE_DENSITY_MULTIPLIER_THIS_FRAME, 0f);
-
-                Function.Call(Hash.SET_VEHICLE_POPULATION_BUDGET, 0);
-                Function.Call(Hash.SET_PED_POPULATION_BUDGET, 0);
-
-                Function.Call(Hash.SUPPRESS_SHOCKING_EVENTS_NEXT_FRAME);
-                Function.Call(Hash.SUPPRESS_AGITATION_EVENTS_NEXT_FRAME);
-
-
-
-                Function.Call(Hash.SET_RANDOM_VEHICLE_DENSITY_MULTIPLIER_THIS_FRAME, 0f);
-                Function.Call(Hash.SET_PARKED_VEHICLE_DENSITY_MULTIPLIER_THIS_FRAME, 0f);
-                Function.Call(Hash.SET_NUMBER_OF_PARKED_VEHICLES, -1);
-                Function.Call(Hash.SET_ALL_LOW_PRIORITY_VEHICLE_GENERATORS_ACTIVE, false);
-                Function.Call(Hash.SET_FAR_DRAW_VEHICLES, false);
-                Function.Call(Hash.DESTROY_MOBILE_PHONE);
-                Function.Call((Hash)0x015C49A93E3E086E, true);
-                Function.Call(Hash.SET_PED_DENSITY_MULTIPLIER_THIS_FRAME, 0f);
-                Function.Call(Hash.SET_SCENARIO_PED_DENSITY_MULTIPLIER_THIS_FRAME, 0f, 0f);
-                Function.Call(Hash.SET_CAN_ATTACK_FRIENDLY, Game.Player.Character, true, true);
-                Function.Call(Hash.SET_PED_CAN_BE_TARGETTED, Game.Player.Character, true);
-                Function.Call((Hash)0xF796359A959DF65D, false); // Display distant vehicles
-                Function.Call(Hash.SET_AUTO_GIVE_PARACHUTE_WHEN_ENTER_PLANE, Game.Player, false);
-                Function.Call((Hash)0xD2B315B6689D537D, Game.Player, false);
-                Function.Call(Hash.DISPLAY_CASH, false);
+                
                 DEBUG_STEP = 30;
 
 
@@ -3997,7 +4003,7 @@ namespace CherryMP
                             continue;
                         }
                         //TO CHECK
-                        if (Util.Util.IsVehicleEmpty(entity) && !VehicleSyncManager.IsInterpolating(entity.Handle) && veh.TraileredBy == 0 && !VehicleSyncManager.IsSyncing(veh) && ((entity.Handle == Game.Player.LastVehicle?.Handle && DateTime.Now.Subtract(LastCarEnter).TotalMilliseconds > 3000) || entity.Handle != Game.Player.LastVehicle?.Handle))
+                        if (entity.IsVehicleEmpty() && !VehicleSyncManager.IsInterpolating(entity.Handle) && veh.TraileredBy == 0 && !VehicleSyncManager.IsSyncing(veh) && ((entity.Handle == Game.Player.LastVehicle?.Handle && DateTime.Now.Subtract(LastCarEnter).TotalMilliseconds > 3000) || entity.Handle != Game.Player.LastVehicle?.Handle))
                         {
                             if (entity.Position.DistanceToSquared(veh.Position.ToVector()) > 2f)
                             {
@@ -4135,6 +4141,13 @@ namespace CherryMP
                 Client.Disconnect("Connection canceled.");
             }
 
+            if (e.KeyCode == Keys.P && IsOnServer() && !MainMenu.Visible && !Chat.IsFocused && !CefController.ShowCursor)
+            {
+                _mainWarning = new Warning("Disabled feature", "Game settings menu has been disabled while connected.\nDisconnect from the server first.")
+                {
+                    OnAccept = () => { _mainWarning.Visible = false; }
+                };
+            }
 
             if (e.KeyCode == Keys.F10 && !Chat.IsFocused)
             {
@@ -5772,64 +5785,58 @@ namespace CherryMP
 
         public void HandleUnoccupiedVehicleSync(VehicleData data)
         {
-            if (data.VehicleHandle != null)
+            var car = NetEntityHandler.NetToStreamedItem(data.VehicleHandle.Value) as RemoteVehicle;
+
+            if (car != null)
             {
-                var car = NetEntityHandler.NetToStreamedItem(data.VehicleHandle.Value) as RemoteVehicle;
+                car.Health = data.VehicleHealth.Value;
+                car.IsDead = (data.Flag & (int)VehicleDataFlags.VehicleDead) != 0;
 
-                if (car != null)
+                if (car.DamageModel == null) car.DamageModel = new VehicleDamageModel();
+                car.DamageModel.BrokenWindows = data.DamageModel.BrokenWindows;
+                car.DamageModel.BrokenDoors = data.DamageModel.BrokenDoors;
+
+                car.Tires = data.PlayerHealth.Value;
+
+                if (car.StreamedIn)
                 {
-                    if (data.VehicleHealth != null) car.Health = data.VehicleHealth.Value;
-                    car.IsDead = (data.Flag & (int)VehicleDataFlags.VehicleDead) != 0;
+                    var ent = NetEntityHandler.NetToEntity(data.VehicleHandle.Value);
 
-                    if (car.DamageModel == null) car.DamageModel = new VehicleDamageModel();
-                    car.DamageModel.BrokenWindows = data.DamageModel.BrokenWindows;
-                    car.DamageModel.BrokenDoors = data.DamageModel.BrokenDoors;
-
-                    if (data.PlayerHealth != null)
+                    if (ent != null)
                     {
-                        car.Tires = data.PlayerHealth.Value;
-
-                        if (car.StreamedIn)
+                        if (data.Velocity != null)
                         {
-                            var ent = NetEntityHandler.NetToEntity(data.VehicleHandle.Value);
-
-                            if (ent != null)
-                            {
-                                if (data.Velocity != null)
-                                {
-                                    VehicleSyncManager.Interpolate(data.VehicleHandle.Value, ent.Handle, data.Position.ToVector(), data.Velocity, data.Quaternion.ToVector());
-                                }
-                                else
-                                {
-                                    car.Position = data.Position;
-                                    car.Rotation = data.Quaternion;
-                                }
-
-                                var veh = new Vehicle(ent.Handle);
-
-                                veh.SetVehicleDamageModel(car.DamageModel);
-
-                                veh.EngineHealth = car.Health;
-                                if (!ent.IsDead && car.IsDead)
-                                {
-                                    ent.IsInvincible = false;
-                                    veh.Explode();
-                                }
-
-                                for (int i = 0; i < 8; i++)
-                                {
-                                    bool busted = (data.PlayerHealth.Value & (byte)(1 << i)) != 0;
-                                    if (busted && !veh.IsTireBurst(i)) veh.Wheels[i].Burst();
-                                    else if (!busted && veh.IsTireBurst(i)) veh.Wheels[i].Fix();
-                                }
-                            }
+                            VehicleSyncManager.Interpolate(data.VehicleHandle.Value, ent.Handle, data.Position.ToVector(), data.Velocity, data.Quaternion.ToVector());
                         }
                         else
                         {
                             car.Position = data.Position;
                             car.Rotation = data.Quaternion;
                         }
+
+                        var veh = new Vehicle(ent.Handle);
+
+                        veh.SetVehicleDamageModel(car.DamageModel);
+
+                        veh.EngineHealth = car.Health;
+                        if (!ent.IsDead && car.IsDead)
+                        {
+                            ent.IsInvincible = false;
+                            veh.Explode();
+                        }
+
+                        for (int i = 0; i < 8; i++)
+                        {
+                            bool busted = (data.PlayerHealth.Value & (byte)(1 << i)) != 0;
+                            if (busted && !veh.IsTireBurst(i)) veh.Wheels[i].Burst();
+                            else if (!busted && veh.IsTireBurst(i)) veh.Wheels[i].Fix();
+                        }
                     }
+                }
+                else
+                {
+                    car.Position = data.Position;
+                    car.Rotation = data.Quaternion;
                 }
             }
         }
@@ -5884,7 +5891,7 @@ namespace CherryMP
             CustomAnimation = null;
             AnimationFlag = 0;
 
-            Util.Util.SetPlayerSkin(PedHash.Clown01SMY);
+            Game.Player.Character.SetPlayerSkin(PedHash.Jesus01);
 
             Game.Player.Character.MaxHealth = 200;
             Game.Player.Character.Health = 200;
@@ -5896,8 +5903,8 @@ namespace CherryMP
             Game.Player.Character.Opacity = 255;
             Game.Player.Character.IsInvincible = false;
             Game.Player.Character.Weapons.RemoveAll();
-            Function.Call(Hash.SET_RUN_SPRINT_MULTIPLIER_FOR_PLAYER, Game.Player, 1f);
-            Function.Call(Hash.SET_SWIM_MULTIPLIER_FOR_PLAYER, Game.Player, 1f);
+            Function.Call(Hash.SET_RUN_SPRINT_MULTIPLIER_FOR_PLAYER, Game.Player.Handle, 1f);
+            Function.Call(Hash.SET_SWIM_MULTIPLIER_FOR_PLAYER, Game.Player.Handle, 1f);
 
             Function.Call(Hash.SET_FAKE_WANTED_LEVEL, 0);
             Function.Call(Hash.DETACH_ENTITY, Game.Player.Character.Handle, true, true);

@@ -118,7 +118,7 @@ namespace CherryMP.Networking
             }
             _lastCar = car;
 
-            if (player.IsInVehicle() && Util.Util.GetResponsiblePed(player.CurrentVehicle).Handle == player.Handle)
+            if (player.IsInVehicle() && player.CurrentVehicle.GetResponsiblePed()?.Handle == player.Handle)
             {
                 int carNetHandle = Main.NetEntityHandler.EntityToNet(car.Handle);
                 var lg = Function.Call<int>(Hash.GET_LANDING_GEAR_STATE, car);

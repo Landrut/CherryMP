@@ -51,7 +51,7 @@ namespace CherryMP.Networking
         public static int StreamedOutParticles;
 
         public static int StreamedInItems;
-        public static int StreamedInVehicles;
+        public static RemoteVehicle[] StreamedInVehicles;
         public static int StreamedInLabels;
         public static int StreamedInObjects;
         public static int StreamedInPickups;
@@ -108,9 +108,11 @@ namespace CherryMP.Networking
                 var streamedInMarkers = streamedInGlobalRange.OfType<RemoteMarker>().Where(item => item.Position != null && (item.Dimension == Main.LocalDimension || item.Dimension == 0)).OrderBy(item => item.Position.DistanceToSquared(position)).Take(MAX_MARKERS);
                 var streamedInParticles = streamedInGlobalRange.OfType<RemoteParticle>().Where(item => item.Position != null && (item.Dimension == Main.LocalDimension || item.Dimension == 0)).OrderBy(item => item.Position.DistanceToSquared(position)).Take(MAX_PARTICLES);
 
+                var streamedInVehiclesList = new List<RemoteVehicle>();
+
                 StreamedInItems = streamedInGlobalRange.Count();
                 StreamedInObjects = streamedInObjects.Count();
-                StreamedInVehicles = streamedInVehicles.Count();
+                StreamedInVehicles = streamedInVehiclesList.ToArray();
                 StreamedInPickups = streamedInPickups.Count();
                 StreamedInMarkers = streamedInMarkers.Count();
                 StreamedInLabels = streamedInLabels.Count();
@@ -725,8 +727,8 @@ namespace CherryMP.Networking
                         }
                         else
                         {
-                            Util.Util.SetNonStandardVehicleMod(car, pair.Key, pair.Value);
-                        }
+                                car.SetNonStandardVehicleMod(pair.Key, pair.Value);
+                            }
                     }
                 }
             }
@@ -2466,7 +2468,7 @@ namespace CherryMP.Networking
                     }
                     else
                     {
-                        if (data.Mods.ContainsKey((byte)i)) Util.Util.SetNonStandardVehicleMod(veh, i, data.Mods[(byte)i]);
+                        if (data.Mods.ContainsKey((byte)i)) veh.SetNonStandardVehicleMod(i, data.Mods[(byte)i]);
                     }
                 }
             }
