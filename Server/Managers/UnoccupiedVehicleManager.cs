@@ -21,12 +21,9 @@ namespace CherryMPServer.Managers
 
         public void Pulse()
         {
-            if (Program.GetTicks() - _lastUpdate > UPDATE_RATE)
-            {
-                _lastUpdate = Program.GetTicks();
-
-                Task.Run((Action)Update);
-            }
+            if (Program.GetTicks() - _lastUpdate <= UPDATE_RATE) return;
+            _lastUpdate = Program.GetTicks();
+            Task.Run((Action)Update);
         }
 
         public Client GetSyncer(int handle)
@@ -36,60 +33,75 @@ namespace CherryMPServer.Managers
 
         public void UnsyncAllFrom(Client player)
         {
-            for (int i = Syncers.Count - 1; i >= 0; i--)
+            for (var i = Syncers.Count - 1; i >= 0; i--)
             {
                 var el = Syncers.ElementAt(i);
 
                 if (el.Value == player)
                 {
+                    StopSync(el.Value, el.Key);
                     Syncers.Remove(el.Key);
                 }
             }
         }
-        
+
         public static bool IsVehicleUnoccupied(NetHandle vehicle)
         {
             var players = Program.ServerInstance.PublicAPI.getAllPlayers();
             var vehicles = Program.ServerInstance.NetEntityHandler.ToCopy().Select(pair => pair.Value).Where(p => p is VehicleProperties).Cast<VehicleProperties>();
             var prop = Program.ServerInstance.NetEntityHandler.NetToProp<VehicleProperties>(vehicle.Value);
 
-            return players.TrueForAll(c => c.CurrentVehicle != vehicle) && vehicles.All(v => v.Trailer != vehicle.Value) &&
-                   prop.AttachedTo == null;
+            return players.TrueForAll(c => c.CurrentVehicle != vehicle) && vehicles.All(v => v.Trailer != vehicle.Value) && prop.AttachedTo == null;
         }
 
-        public void Update()
+        private void Update()
         {
-            foreach (var vehicle in Program.ServerInstance.PublicAPI.getAllVehicles())
+            for (var index = Program.ServerInstance.PublicAPI.getAllVehicles().Count - 1; index >= 0; index--)
             {
+                var vehicle = Program.ServerInstance.PublicAPI.getAllVehicles()[index];
                 UpdateVehicle(vehicle.Value, Program.ServerInstance.NetEntityHandler.NetToProp<VehicleProperties>(vehicle.Value));
             }
         }
 
-        public void UpdateVehicle(int handle, VehicleProperties prop)
+        public void UpdateVehicle(int handle, EntityProperties prop)
         {
             if (handle == 0 || prop == null) return;
-            if (!IsVehicleUnoccupied(new NetHandle(handle)))
+
+            if (!IsVehicleUnoccupied(new NetHandle(handle))) //OCCUPIED
             {
                 if (Syncers.ContainsKey(handle))
                 {
                     StopSync(Syncers[handle], handle);
                 }
-
                 return;
             }
 
-            if (Syncers.ContainsKey(handle)) // This vehicle already has a syncer
-            {
-                if (Syncers[handle].Position.DistanceToSquared(prop.Position) > SYNC_RANGE_SQUARED || (Syncers[handle].Properties.Dimension != prop.Dimension && prop.Dimension != 0))
-                {
-                    StopSync(Syncers[handle], handle);
+            if (prop.Position == null) return;
 
-                    FindSyncer(handle, prop);
+            var players = Program.ServerInstance.PublicAPI.getAllPlayers().Where(c => (c.Properties.Dimension == prop.Dimension || prop.Dimension == 0) && c.Position != null).OrderBy(c => c.Position.DistanceToSquared(prop.Position)).Take(1).ToArray();
+            if (players[0] == null) return;
+
+            if (players[0].Position.DistanceToSquared(prop.Position) < SYNC_RANGE_SQUARED / 2 && (players[0].Properties.Dimension == prop.Dimension || prop.Dimension == 0))
+            {
+                if (Syncers.ContainsKey(handle))
+                {
+                    if (Syncers[handle] != players[0])
+                    {
+                        StopSync(Syncers[handle], handle);
+                        StartSync(players[0], handle);
+                    }
+                }
+                else
+                {
+                    StartSync(players[0], handle);
                 }
             }
-            else // This car has no syncer
+            else
             {
-                FindSyncer(handle, prop);
+                if (Syncers.ContainsKey(handle))
+                {
+                    StopSync(players[0], handle);
+                }
             }
         }
 
@@ -134,8 +146,8 @@ namespace CherryMPServer.Managers
             packet.Write(vehicle);
             packet.Write(true);
 
-            Program.ServerInstance.Server.SendMessage(packet, player.NetConnection, NetDeliveryMethod.ReliableOrdered,
-                (int) ConnectionChannel.SyncEvent);
+            Program.ServerInstance.Server.SendMessage(packet, player.NetConnection, NetDeliveryMethod.ReliableUnordered, (int)ConnectionChannel.SyncEvent);
+            //Console.WriteLine("[DEBUG MESSAGE] [+] Starting sync for: " + player.Name + " | Vehicle: " + vehicle);
 
             Syncers.Set(vehicle, player);
         }
@@ -147,8 +159,8 @@ namespace CherryMPServer.Managers
             packet.Write(vehicle);
             packet.Write(false);
 
-            Program.ServerInstance.Server.SendMessage(packet, player.NetConnection, NetDeliveryMethod.ReliableOrdered,
-                (int)ConnectionChannel.SyncEvent);
+            Program.ServerInstance.Server.SendMessage(packet, player.NetConnection, NetDeliveryMethod.ReliableUnordered, (int)ConnectionChannel.SyncEvent);
+            //Console.WriteLine("[DEBUG MESSAGE] [-] Stopping sync for: " + player.Name + " | Vehicle: " + vehicle);
 
             Syncers.Remove(vehicle);
         }

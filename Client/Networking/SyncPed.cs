@@ -602,89 +602,60 @@ namespace CherryMP.Networking
         internal int _debugVehicleHash;
 	    bool CreateVehicle()
 	    {
-	        if (_isInVehicle && MainVehicle != null && Character.IsInVehicle(MainVehicle) && Game.Player.Character.IsInVehicle(MainVehicle) && VehicleSeat == -1 && 
-                Function.Call<int>(Hash.GET_SEAT_PED_IS_TRYING_TO_ENTER, Game.Player.Character) == -1 &&
-	            Util.Util.GetPedSeat(Game.Player.Character) == 0)
-	        {
-	            Character.Task.WarpOutOfVehicle(MainVehicle);
-                Game.Player.Character.Task.WarpIntoVehicle(MainVehicle, GTA.VehicleSeat.Driver);
-	            Main.LastCarEnter = DateTime.Now;
+	        var PlayerChar = Game.Player.Character;
+            if (_isInVehicle && MainVehicle != null && Character.IsInVehicle(MainVehicle) && PlayerChar.IsInVehicle(MainVehicle) && VehicleSeat == -1 && Function.Call<int>(Hash.GET_SEAT_PED_IS_TRYING_TO_ENTER, PlayerChar) == -1 && Util.Util.GetPedSeat(PlayerChar) == 0)
+            {
+                Character.Task.WarpOutOfVehicle(MainVehicle);
+                PlayerChar.Task.WarpIntoVehicle(MainVehicle, GTA.VehicleSeat.Driver);
+                Main.LastCarEnter = DateTime.Now;
                 Script.Yield();
-	            return true;
-	        }
+                return true;
+            }
 
-	        var createVehicle = (!_lastVehicle && _isInVehicle) ||
-	                            (_lastVehicle && _isInVehicle &&
-	                             (MainVehicle == null ||
-	                              (!Character.IsInVehicle(MainVehicle) &&
-	                               Game.Player.Character.VehicleTryingToEnter != MainVehicle) ||
-	                              (VehicleSeat != Util.Util.GetPedSeat(Character) &&
-	                               Game.Player.Character.VehicleTryingToEnter != MainVehicle)));
+            var createVehicle = !_lastVehicle && _isInVehicle || _lastVehicle && _isInVehicle && (MainVehicle == null || !Character.IsInVehicle(MainVehicle) && PlayerChar.VehicleTryingToEnter != MainVehicle || VehicleSeat != Util.Util.GetPedSeat(Character) && PlayerChar.VehicleTryingToEnter != MainVehicle);
 
-	        if (!Debug && MainVehicle != null)
-	        {
-	            createVehicle = createVehicle || Main.NetEntityHandler.EntityToNet(MainVehicle.Handle) != VehicleNetHandle;
-	        }
+            if (!Debug && MainVehicle != null)
+            {
+                createVehicle = createVehicle || Main.NetEntityHandler.EntityToNet(MainVehicle.Handle) != VehicleNetHandle;
+            }
+            if (!createVehicle) return false;
 
-            if (createVehicle)
-			{
-			    if (Debug)
-			    {
-			        if (MainVehicle != null) MainVehicle.Delete();
-			        MainVehicle = World.CreateVehicle(new Model(_debugVehicleHash), Position, VehicleRotation.Z);
-			        //MainVehicle.HasCollision = false;
-			    }
-			    else
-			    {
-			        MainVehicle = new Vehicle(Main.NetEntityHandler.NetToEntity(VehicleNetHandle)?.Handle ?? 0);
-			    }
-				DEBUG_STEP = 10;
+            MainVehicle = new Vehicle(Main.NetEntityHandler.NetToEntity(VehicleNetHandle)?.Handle ?? 0);
 
-			    if (MainVehicle == null || MainVehicle.Handle == 0)
-			    {
-			        Character.Position = Position;
-			        return true;
-			    }
-                
+            if (MainVehicle == null || MainVehicle.Handle == 0)
+            {
+                Character.Position = Position;
+                return true;
+            }
 
-                if (Game.Player.Character.IsInVehicle(MainVehicle) &&
-					VehicleSeat == Util.Util.GetPedSeat(Game.Player.Character))
-				{
-				    if (DateTime.Now.Subtract(Main.LastCarEnter).TotalMilliseconds < 1000)
-				    {
-				        return true;
-				    }
+            if (PlayerChar.IsInVehicle(MainVehicle) && VehicleSeat == Util.Util.GetPedSeat(PlayerChar))
+            {
+                if (DateTime.Now.Subtract(Main.LastCarEnter).TotalMilliseconds < 1000) return true;
 
-					Game.Player.Character.Task.WarpOutOfVehicle(MainVehicle);
-					Util.Util.SafeNotify("~r~Car jacked!");
-				}
-				DEBUG_STEP = 11;
+                PlayerChar.Task.WarpOutOfVehicle(MainVehicle);
+                NativeUI.BigMessageThread.MessageInstance.ShowMissionPassedMessage("~r~Car jacked!", 3000);
+            }
 
-				if (MainVehicle != null && MainVehicle.Handle != 0)
-				{
-                    /*
-				    if (VehicleSeat == -1)
-				    {
-				        //MainVehicle.Position = VehiclePosition;
-				    }
-				    else
-				    {
-				        Character.PositionNoOffset = MainVehicle.Position;
-				    }*/
-                    Character.PositionNoOffset = MainVehicle.Position;
+            if (MainVehicle != null && MainVehicle.Handle != 0)
+            {
+                //if (VehicleSeat == -1)
+                //{
+                //    //MainVehicle.Position = VehiclePosition;
+                //}
+                //else
+                //{
+                //    Character.PositionNoOffset = MainVehicle.Position;
+                //}
+                Character.PositionNoOffset = MainVehicle.Position;
 
-                    MainVehicle.IsEngineRunning = true;
-                    MainVehicle.IsInvincible = true;
-                    Character.SetIntoVehicle(MainVehicle, (VehicleSeat)VehicleSeat);
-                    DEBUG_STEP = 12;
-				}
-				DEBUG_STEP = 13;
-				_lastVehicle = true;
-				_justEnteredVeh = true;
-				_enterVehicleStarted = DateTime.Now;
-				return true;
-			}
-		    return false;
+                MainVehicle.IsEngineRunning = true;
+                MainVehicle.IsInvincible = true;
+                Character.SetIntoVehicle(MainVehicle, (VehicleSeat)VehicleSeat);
+            }
+            _lastVehicle = true;
+            _justEnteredVeh = true;
+            _enterVehicleStarted = DateTime.Now;
+            return true;
 	    }
 
 	    bool UpdatePlayerPosOutOfRange(Vector3 gPos, bool inRange)
@@ -728,83 +699,85 @@ namespace CherryMP.Networking
             return _isInVehicle ? UpdateVehiclePosition() : UpdateOnFootPosition();
 	    }
 
-	    void UpdateVehicleInternalInfo()
-	    {
-	        if (MainVehicle.MemoryAddress == IntPtr.Zero) return;
+        void UpdateVehicleInternalInfo()
+        {
+            if (MainVehicle.MemoryAddress == IntPtr.Zero) return;
 
             MainVehicle.EngineHealth = VehicleHealth;
-			if (IsVehDead && !MainVehicle.IsDead)
-			{
-				MainVehicle.IsInvincible = false;
-				MainVehicle.Explode();
-			}
-			else if (!IsVehDead && MainVehicle.IsDead)
-			{
-				MainVehicle.IsInvincible = true;
-				if (MainVehicle.IsDead)
-					MainVehicle.Repair();
-			}
-			DEBUG_STEP = 17;
-			//MainVehicle.PrimaryColor = (VehicleColor) VehiclePrimaryColor;
-			//MainVehicle.SecondaryColor = (VehicleColor) VehicleSecondaryColor;
-            /*
-			if (VehicleMods != null && _modSwitch % 50 == 0 &&
-				Game.Player.Character.IsInRangeOfEx(Position, 30f))
-			{
-				var id = _modSwitch / 50;
+            if (IsVehDead && !MainVehicle.IsDead)
+            {
+                MainVehicle.IsInvincible = false;
+                MainVehicle.Explode();
+            }
 
-				if (VehicleMods.ContainsKey(id) && VehicleMods[id] != MainVehicle.GetMod(id))
-				{
-					Function.Call(Hash.SET_VEHICLE_MOD_KIT, MainVehicle.Handle, 0);
-					MainVehicle.SetMod(id, VehicleMods[id], false);
-					Function.Call(Hash.RELEASE_PRELOAD_MODS, id);
-				}
-			}
-			_modSwitch++;
-            
-			if (_modSwitch >= 2500)
-				_modSwitch = 0;
-                */
-	        Function.Call(Hash.USE_SIREN_AS_HORN, MainVehicle, Siren); // No difference?
+            else if (!IsVehDead && MainVehicle.IsDead)
+            {
+                MainVehicle.IsInvincible = true;
+                if (MainVehicle.IsDead) MainVehicle.Repair();
+            }
 
-			if (IsHornPressed && !_lastHorn)
-			{
-				_lastHorn = true;
-				MainVehicle.SoundHorn(99999);
-			}
+            //MainVehicle.PrimaryColor = (VehicleColor) VehiclePrimaryColor;
+            //MainVehicle.SecondaryColor = (VehicleColor) VehicleSecondaryColor;
 
-			if (!IsHornPressed && _lastHorn)
-			{
-				_lastHorn = false;
-				MainVehicle.SoundHorn(1);
-			}
+            //if (VehicleMods != null && _modSwitch % 50 == 0 &&
+            //	Main.PlayerChar.IsInRangeOfEx(Position, 30f))
+            //{
+            //	var id = _modSwitch / 50;
 
-	        if (IsInBurnout && !_lastBurnout)
-	        {
-	            Function.Call(Hash.SET_VEHICLE_BURNOUT, MainVehicle, true);
+            //	if (VehicleMods.ContainsKey(id) && VehicleMods[id] != MainVehicle.GetMod(id))
+            //	{
+            //		Function.Call(Hash.SET_VEHICLE_MOD_KIT, MainVehicle.Handle, 0);
+            //		MainVehicle.SetMod(id, VehicleMods[id], false);
+            //		Function.Call(Hash.RELEASE_PRELOAD_MODS, id);
+            //	}
+            //}
+            //_modSwitch++;
+
+            //if (_modSwitch >= 2500)
+            //	_modSwitch = 0;
+
+            Function.Call(Hash.USE_SIREN_AS_HORN, MainVehicle, Siren); // No difference?
+
+            if (IsHornPressed && !_lastHorn)
+            {
+                _lastHorn = true;
+                MainVehicle.SoundHorn(99999);
+            }
+
+            if (!IsHornPressed && _lastHorn)
+            {
+                _lastHorn = false;
+                MainVehicle.SoundHorn(1);
+            }
+
+            if (IsInBurnout && !_lastBurnout)
+            {
+                Function.Call(Hash.SET_VEHICLE_BURNOUT, MainVehicle, true);
                 Function.Call(Hash.TASK_VEHICLE_TEMP_ACTION, Character, MainVehicle, 23, 120000); // 30 - burnout
             }
 
-	        if (!IsInBurnout && _lastBurnout)
-	        {
+            if (!IsInBurnout && _lastBurnout)
+            {
                 Function.Call(Hash.SET_VEHICLE_BURNOUT, MainVehicle, false);
                 Character.Task.ClearAll();
             }
 
-	        _lastBurnout = IsInBurnout;
+            _lastBurnout = IsInBurnout;
 
             Function.Call(Hash.SET_VEHICLE_BRAKE_LIGHTS, MainVehicle, Speed > 0.2 && _lastSpeed > Speed);
 
-            DEBUG_STEP = 18;
+            if (MainVehicle.SirenActive && !Siren)
+            {
+                MainVehicle.SirenActive = Siren;
+            }
+            else if (!MainVehicle.SirenActive && Siren)
+            {
+                MainVehicle.SirenActive = Siren;
+            }
 
-			if (MainVehicle.SirenActive && !Siren)
-				MainVehicle.SirenActive = Siren;
-			else if (!MainVehicle.SirenActive && Siren)
-				MainVehicle.SirenActive = Siren;
-
-			MainVehicle.CurrentRPM = VehicleRPM;
-		    MainVehicle.SteeringAngle = Util.Util.ToRadians(SteeringScale);
-	    }
+            MainVehicle.CurrentRPM = VehicleRPM;
+            MainVehicle.SteeringAngle = SteeringScale.ToRadians();
+        }
 
         struct interpolation
         {
@@ -963,92 +936,30 @@ namespace CherryMP.Networking
         private int m_uiForceLocalZCounter;
         void DisplayVehiclePosition()
         {
-            var spazzout = (_spazzout_prevention != null &&
-                            DateTime.Now.Subtract(_spazzout_prevention.Value).TotalMilliseconds > 200);
+            var spazzout = (_spazzout_prevention != null && DateTime.Now.Subtract(_spazzout_prevention.Value).TotalMilliseconds > 200);
 
             if ((Speed > 0.2f || IsInBurnout) && currentInterop.FinishTime > 0 && _lastPosition != null && spazzout)
             {
-                /*
-                Vector3 newPos;
-
-                if (Main.VehicleLagCompensation)
-                {
-                    long currentTime = Util.Util.TickCount;
-                    float alpha = Util.Util.Unlerp(currentInterop.StartTime, currentTime, currentInterop.FinishTime);
-
-                    Vector3 comp = Util.Util.Lerp(new Vector3(), alpha, currentInterop.vecError);
-                    newPos = VehiclePosition + comp;
-                    int forceMultiplier = 3;
-
-                    if (Game.Player.Character.IsInVehicle() &&
-                        MainVehicle.IsTouching(Game.Player.Character.CurrentVehicle))
-                    {
-                        forceMultiplier = 1;
-                    }
-
-                    if (Game.Player.Character.IsInRangeOfEx(newPos, physicsRange))
-                    {
-                        MainVehicle.Velocity = VehicleVelocity + forceMultiplier*(newPos - MainVehicle.Position);
-                    }
-                    else
-                    {
-                        MainVehicle.PositionNoOffset = newPos;
-                    }
-                }
-                else
-                {
-                    var dataLatency = DataLatency + TicksSinceLastUpdate;
-                    newPos = VehiclePosition + VehicleVelocity * dataLatency / 1000;
-                    MainVehicle.Velocity = VehicleVelocity + 2 * (newPos - MainVehicle.Position);
-                }
-
-                if (Debug)
-                {
-                    World.DrawMarker(MarkerType.DebugSphere, MainVehicle.Position, new Vector3(), new Vector3(),
-                        new Vector3(1, 1, 1), Color.FromArgb(100, 255, 0, 0));
-                    if (Game.Player.Character.IsInVehicle())
-                        World.DrawMarker(MarkerType.DebugSphere, Game.Player.Character.CurrentVehicle.Position,
-                            new Vector3(), new Vector3(),
-                            new Vector3(1, 1, 1), Color.FromArgb(100, 0, 255, 0));
-                    World.DrawMarker(MarkerType.DebugSphere, newPos, new Vector3(), new Vector3(),
-                        new Vector3(1, 1, 1), Color.FromArgb(100, 0, 0, 255));
-                }
-
-                // Check if we're too far
-
-                StuckVehicleCheck(newPos);
-
-                //GTA.UI.Screen.ShowSubtitle("alpha: " + alpha);
-
-                //MainVehicle.Alpha = 100;
-                */
-
                 VMultiVehiclePos();
-
                 _stopTime = DateTime.Now;
                 _carPosOnUpdate = MainVehicle.Position;
             }
             else if (DateTime.Now.Subtract(_stopTime).TotalMilliseconds <= 1000 && _lastPosition != null && spazzout && currentInterop.FinishTime > 0)
             {
                 var dir = Position - _lastPosition.Value;
-                var posTarget = Util.Util.LinearVectorLerp(_carPosOnUpdate, Position + dir,
-                    (int)DateTime.Now.Subtract(_stopTime).TotalMilliseconds, 1000);
-                Function.Call(Hash.SET_ENTITY_COORDS_NO_OFFSET, MainVehicle, posTarget.X, posTarget.Y,
-                    posTarget.Z, 0, 0, 0, 0);
+                var posTarget = Util.Util.LinearVectorLerp(_carPosOnUpdate, Position + dir, (int)DateTime.Now.Subtract(_stopTime).TotalMilliseconds, 1000);
+                Function.Call(Hash.SET_ENTITY_COORDS_NO_OFFSET, MainVehicle, posTarget.X, posTarget.Y, posTarget.Z, 0, 0, 0, 0);
             }
             else
             {
                 MainVehicle.PositionNoOffset = Position;
             }
 
-            DEBUG_STEP = 21;
 #if !DISABLE_SLERP
 
             if (_lastVehicleRotation != null && (_lastVehicleRotation.Value - _vehicleRotation).LengthSquared() > 1f && spazzout)
             {
-                MainVehicle.Quaternion = GTA.Math.Quaternion.Slerp(_lastVehicleRotation.Value.ToQuaternion(),
-                    _vehicleRotation.ToQuaternion(),
-                    Math.Min(1.5f, TicksSinceLastUpdate / (float)AverageLatency));
+                MainVehicle.Quaternion = GTA.Math.Quaternion.Slerp(_lastVehicleRotation.Value.ToQuaternion(), _vehicleRotation.ToQuaternion(), Math.Min(1.5f, TicksSinceLastUpdate / (float)AverageLatency));
             }
             else
             {
@@ -1065,64 +976,60 @@ namespace CherryMP.Networking
             return (Team != -1 && Team == Main.LocalTeam);
         }
 
-	    bool DisplayVehicleDriveBy()
-	    {
-            if (IsShooting && CurrentWeapon != 0 && VehicleSeat == -1 && WeaponDataProvider.DoesVehicleSeatHaveMountedGuns((VehicleHash)VehicleHash))
-			{
-				var isRocket = WeaponDataProvider.IsVehicleWeaponRocket(CurrentWeapon);
-				if (isRocket && DateTime.Now.Subtract(_lastRocketshot).TotalMilliseconds < 1500)
-				{
-					return true;
-				}
-				if (isRocket)
-					_lastRocketshot = DateTime.Now;
-				var isParallel =
-					WeaponDataProvider.DoesVehicleHaveParallelWeapon(unchecked((VehicleHash)VehicleHash),
-						isRocket);
+        bool DisplayVehicleDriveBy()
+        {
+            if (!IsShooting || CurrentWeapon == 0 || VehicleSeat != -1 || !WeaponDataProvider.DoesVehicleSeatHaveMountedGuns((VehicleHash)VehicleHash)) return false;
 
-				var muzzle = WeaponDataProvider.GetVehicleWeaponMuzzle(unchecked((VehicleHash)VehicleHash), isRocket);
+            var isRocket = WeaponDataProvider.IsVehicleWeaponRocket(CurrentWeapon);
+            if (isRocket)
+            {
+                if (DateTime.Now.Subtract(_lastRocketshot).TotalMilliseconds < 1500) return true;
+                _lastRocketshot = DateTime.Now;
+            }
 
-				if (isParallel && _leftSide)
-				{
-					muzzle = new Vector3(muzzle.X * -1f, muzzle.Y, muzzle.Z);
-				}
-				_leftSide = !_leftSide;
+            var isParallel = WeaponDataProvider.DoesVehicleHaveParallelWeapon(unchecked((VehicleHash)VehicleHash), isRocket);
 
-				var start =
-					MainVehicle.GetOffsetInWorldCoords(muzzle);
-				var end = start + Main.RotationToDirection(VehicleRotation) * 100f;
-				var hash = CurrentWeapon;
-				var speed = 0xbf800000;
-                
-				if (isRocket)
-					speed = 0xbf800000;
-				else if ((VehicleHash) VehicleHash == GTA.VehicleHash.Savage ||
-				         (VehicleHash) VehicleHash == GTA.VehicleHash.Hydra ||
-				         (VehicleHash) VehicleHash == GTA.VehicleHash.Lazer)
-				    hash = unchecked((int) WeaponHash.Railgun);
-                else
-					hash = unchecked((int)WeaponHash.CombatPDW);
+            var muzzle = WeaponDataProvider.GetVehicleWeaponMuzzle(unchecked((VehicleHash)VehicleHash), isRocket);
 
-			    int damage = IsFriend() ? 0 : 75;
+            if (isParallel && _leftSide)
+            {
+                muzzle = new Vector3(muzzle.X * -1f, muzzle.Y, muzzle.Z);
+            }
+            _leftSide = !_leftSide;
 
-				Function.Call(Hash.SHOOT_SINGLE_BULLET_BETWEEN_COORDS, start.X, start.Y, start.Z, end.X,
-						end.Y, end.Z, damage, true, hash, Character, true, false, speed);
-			}
+            var start = MainVehicle.GetOffsetInWorldCoords(muzzle);
+            var end = start + Main.RotationToDirection(VehicleRotation) * 100f;
+            var hash = CurrentWeapon;
+            var speed = 0xbf800000;
 
-		    return false;
-	    }
+            if (isRocket)
+            {
+                speed = 0xbf800000;
+            }
+            else if ((VehicleHash)VehicleHash == GTA.VehicleHash.Savage || (VehicleHash)VehicleHash == GTA.VehicleHash.Hydra || (VehicleHash)VehicleHash == GTA.VehicleHash.Lazer)
+            {
+                hash = unchecked((int)WeaponHash.Railgun);
+            }
+            else
+            {
+                hash = unchecked((int)WeaponHash.CombatPDW);
+            }
 
-		bool UpdateVehicleMainData()
-		{
-            UpdateVehicleInternalInfo();	
-			DEBUG_STEP = 19;
 
-			DisplayVehiclePosition();
+            var damage = IsFriend() ? 0 : 75;
 
-		    return false;
-		}
+            Function.Call(Hash.SHOOT_SINGLE_BULLET_BETWEEN_COORDS, start.X, start.Y, start.Z, end.X, end.Y, end.Z, damage, true, hash, Character, true, false, speed);
 
-	    void UpdateVehicleMountedWeapon()
+            return false;
+        }
+
+        void UpdateVehicleMainData()
+        {
+            UpdateVehicleInternalInfo();
+            DisplayVehiclePosition();
+        }
+
+        void UpdateVehicleMountedWeapon()
 	    {
             if (WeaponDataProvider.DoesVehicleSeatHaveGunPosition((VehicleHash)VehicleHash, VehicleSeat))
             {
