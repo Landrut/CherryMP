@@ -13,8 +13,6 @@ namespace CherryMP
 {
     public partial class SplashScreen : Form
     {
-        LauncherSettings.ISubprocessBehaviour mainBehaviour = null;
-
         public SplashScreen()
         {
             InitializeComponent();

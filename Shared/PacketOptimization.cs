@@ -438,11 +438,12 @@ namespace CherryMPShared
                 CheckBit(data.Flag.Value, PedDataFlags.HasAimData))
             {
                 // read where is he aiming
-                Vector3 aimPoint = new Vector3();
-
-                aimPoint.X = r.ReadSingle();
-                aimPoint.Y = r.ReadSingle();
-                aimPoint.Z = r.ReadSingle();
+                Vector3 aimPoint = new Vector3
+                {
+                    X = r.ReadSingle(),
+                    Y = r.ReadSingle(),
+                    Z = r.ReadSingle()
+                };
 
                 data.AimCoords = aimPoint;
             }
@@ -505,11 +506,12 @@ namespace CherryMPShared
                 data.WeaponHash = r.ReadInt32();
 
                 // read aim coordinates
-                Vector3 aimCoords = new Vector3();
-
-                aimCoords.X = r.ReadSingle();
-                aimCoords.Y = r.ReadSingle();
-                aimCoords.Z = r.ReadSingle();
+                Vector3 aimCoords = new Vector3
+                {
+                    X = r.ReadSingle(),
+                    Y = r.ReadSingle(),
+                    Z = r.ReadSingle()
+                };
 
                 data.AimCoords = aimCoords;
             }
@@ -576,20 +578,23 @@ namespace CherryMPShared
             // Read vehicle damage model
             if (r.ReadBoolean())
             {
-                data.DamageModel = new VehicleDamageModel();
-                data.DamageModel.BrokenDoors = r.ReadByte();
-                data.DamageModel.BrokenWindows = r.ReadByte();
-                data.DamageModel.BrokenLights = r.ReadInt32();
+                data.DamageModel = new VehicleDamageModel
+                {
+                    BrokenDoors = r.ReadByte(),
+                    BrokenWindows = r.ReadByte(),
+                    BrokenLights = r.ReadInt32()
+                };
             }
 
             // Does he have a traielr?
             if (r.ReadBoolean())
             {
-                Vector3 trailerPos = new Vector3();
-
-                trailerPos.X = r.ReadSingle();
-                trailerPos.Y = r.ReadSingle();
-                trailerPos.Z = r.ReadSingle();
+                Vector3 trailerPos = new Vector3
+                {
+                    X = r.ReadSingle(),
+                    Y = r.ReadSingle(),
+                    Z = r.ReadSingle()
+                };
 
                 data.Trailer = trailerPos;
             }
@@ -612,11 +617,12 @@ namespace CherryMPShared
             netHandle = r.ReadInt32();
 
             // read position
-            position = new Vector3();
-
-            position.X = r.ReadSingle();
-            position.Y = r.ReadSingle();
-            position.Z = r.ReadSingle();
+            position = new Vector3
+            {
+                X = r.ReadSingle(),
+                Y = r.ReadSingle(),
+                Z = r.ReadSingle()
+            };
         }
 
         public static bool ReadBulletSync(byte[] array, out int netHandle, out Vector3 position)
@@ -664,10 +670,12 @@ namespace CherryMPShared
         public static VehicleData ReadUnoccupiedVehicleSync(byte[] array)
         {
             var r = new BitReader(array);
-            var data = new VehicleData();
+            var data = new VehicleData
+            {
 
-            // Read vehicle's nethandle.
-            data.VehicleHandle = r.ReadInt32();
+                // Read vehicle's nethandle.
+                VehicleHandle = r.ReadInt32()
+            };
 
             // Read position, rotation and velocity.
             Vector3 position = new Vector3();
@@ -703,9 +711,11 @@ namespace CherryMPShared
             data.PlayerHealth = r.ReadByte();
 
             // Read vehicle damage model
-            data.DamageModel = new VehicleDamageModel();
-            data.DamageModel.BrokenDoors = r.ReadByte();
-            data.DamageModel.BrokenWindows = r.ReadByte();
+            data.DamageModel = new VehicleDamageModel
+            {
+                BrokenDoors = r.ReadByte(),
+                BrokenWindows = r.ReadByte()
+            };
 
             return data;
         }
@@ -713,10 +723,12 @@ namespace CherryMPShared
         public static VehicleData ReadBasicUnoccupiedVehicleSync(byte[] array)
         {
             var r = new BitReader(array);
-            var data = new VehicleData();
+            var data = new VehicleData
+            {
 
-            // Read vehicle's nethandle.
-            data.VehicleHandle = r.ReadInt32();
+                // Read vehicle's nethandle.
+                VehicleHandle = r.ReadInt32()
+            };
 
             // Read position and heading
             Vector3 position = new Vector3();
@@ -744,9 +756,11 @@ namespace CherryMPShared
             data.PlayerHealth = r.ReadByte();
 
             // Read vehicle damage model
-            data.DamageModel = new VehicleDamageModel();
-            data.DamageModel.BrokenDoors = r.ReadByte();
-            data.DamageModel.BrokenWindows = r.ReadByte();
+            data.DamageModel = new VehicleDamageModel
+            {
+                BrokenDoors = r.ReadByte(),
+                BrokenWindows = r.ReadByte()
+            };
 
             return data;
         }

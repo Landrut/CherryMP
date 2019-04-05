@@ -215,9 +215,11 @@ namespace CherryMPShared
             var split = version.Split('.');
             if (split.Length < 2) throw new ArgumentException("Argument version is in wrong format");
 
-            var output = new ParseableVersion();
-            output.Major = int.Parse(split[0]);
-            output.Minor = int.Parse(split[1]);
+            var output = new ParseableVersion
+            {
+                Major = int.Parse(split[0]),
+                Minor = int.Parse(split[1])
+            };
             if (split.Length >= 3) output.Build = int.Parse(split[2]);
             if (split.Length >= 4) output.Revision = int.Parse(split[3]);
             return output;

@@ -302,14 +302,16 @@ namespace CherryMP
             #region Check GamePath directory
             if (string.IsNullOrWhiteSpace(settings.GamePath) || !File.Exists(settings.GamePath + "\\" + "GTA5.exe"))
             {
-                var diag = new OpenFileDialog();
-                /*diag.Filter = "GTA5 Executable|GTA5.exe";
-                diag.FileName = "GTA5.exe";*/
-                diag.DefaultExt = ".exe";
-                diag.RestoreDirectory = true;
-                diag.CheckFileExists = true;
-                diag.CheckPathExists = true;
-                diag.InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles);
+                var diag = new OpenFileDialog
+                {
+                    /*diag.Filter = "GTA5 Executable|GTA5.exe";
+                    diag.FileName = "GTA5.exe";*/
+                    DefaultExt = ".exe",
+                    RestoreDirectory = true,
+                    CheckFileExists = true,
+                    CheckPathExists = true,
+                    InitialDirectory = Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles)
+                };
                 if (diag.ShowDialog() == DialogResult.OK)
                 {
                     settings.GamePath = Path.GetDirectoryName(diag.FileName);
@@ -544,13 +546,19 @@ namespace CherryMP
             }
             else
             {
-                mySettings.Video = new GameSettings.Video();
-                mySettings.Video.PauseOnFocusLoss = new GameSettings.PauseOnFocusLoss();
+                mySettings.Video = new GameSettings.Video
+                {
+                    PauseOnFocusLoss = new GameSettings.PauseOnFocusLoss()
+                };
                 mySettings.Video.PauseOnFocusLoss.Value = 0;
-                mySettings.Graphics.DX_Version = new GameSettings.DX_Version();
-                mySettings.Graphics.DX_Version.Value = 2;
-                mySettings.Video.Windowed = new GameSettings.Windowed();
-                mySettings.Video.Windowed.Value = 2;
+                mySettings.Graphics.DX_Version = new GameSettings.DX_Version
+                {
+                    Value = 2
+                };
+                mySettings.Video.Windowed = new GameSettings.Windowed
+                {
+                    Value = 2
+                };
             }
             try
             {
@@ -1006,8 +1014,10 @@ namespace CherryMP
 
         public SplashScreenThread()
         {
-            _thread = new Thread(Show);
-            _thread.IsBackground = true;
+            _thread = new Thread(Show)
+            {
+                IsBackground = true
+            };
             _thread.Start();
         }
 

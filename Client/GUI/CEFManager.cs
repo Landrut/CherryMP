@@ -171,15 +171,19 @@ namespace CherryMP.GUI
                         if (args.Shift) mod |= CefEventFlags.ShiftDown;
                         if (args.Alt) mod |= CefEventFlags.AltDown;
 
-                        CefKeyEvent kEvent = new CefKeyEvent();
-                        kEvent.EventType = CefKeyEventType.KeyDown;
-                        kEvent.Modifiers = mod;
-                        kEvent.WindowsKeyCode = (int)args.KeyCode;
-                        kEvent.NativeKeyCode = (int)args.KeyValue;
+                        CefKeyEvent kEvent = new CefKeyEvent
+                        {
+                            EventType = CefKeyEventType.KeyDown,
+                            Modifiers = mod,
+                            WindowsKeyCode = (int)args.KeyCode,
+                            NativeKeyCode = (int)args.KeyValue
+                        };
                         browser._browser.GetHost().SendKeyEvent(kEvent);
 
-                        CefKeyEvent charEvent = new CefKeyEvent();
-                        charEvent.EventType = CefKeyEventType.Char;
+                        CefKeyEvent charEvent = new CefKeyEvent
+                        {
+                            EventType = CefKeyEventType.Char
+                        };
 
                         var key = args.KeyCode;
 
@@ -217,9 +221,11 @@ namespace CherryMP.GUI
                     {
                         if (!browser.IsInitialized()) continue;
 
-                        CefKeyEvent kEvent = new CefKeyEvent();
-                        kEvent.EventType = CefKeyEventType.KeyUp;
-                        kEvent.WindowsKeyCode = (int)args.KeyCode;
+                        CefKeyEvent kEvent = new CefKeyEvent
+                        {
+                            EventType = CefKeyEventType.KeyUp,
+                            WindowsKeyCode = (int)args.KeyCode
+                        };
                         browser._browser.GetHost().SendKeyEvent(kEvent);
                     }
                 }

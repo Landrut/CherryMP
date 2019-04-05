@@ -1076,11 +1076,10 @@ namespace CherryMP.Networking
 							var rot = Main.DirectionToRotation(kekDir);
 							var newDir = Main.RotationToDirection(new Vector3(0, 0, rot.Z));
 							newDir.Normalize();
-							tPos = tPos +
-								   newDir *
-								   WeaponDataProvider.GetVehicleWeaponMuzzle((VehicleHash)VehicleHash, true)
-									   .Length();
-						}
+                            tPos += newDir *
+                                   WeaponDataProvider.GetVehicleWeaponMuzzle((VehicleHash)VehicleHash, true)
+                                       .Length();
+                        }
 
 
 						var turretDir = (AimCoords - tPos);
@@ -2040,7 +2039,7 @@ namespace CherryMP.Networking
             
             if (length > 0.05f * 0.05f && length < StreamerThread.PlayerStreamingRange * StreamerThread.PlayerStreamingRange)
             {
-                lerpValue = lerpValue + ((tServer * 2) / 50000f);
+                lerpValue += ((tServer * 2) / 50000f);
                 if (Character.IsSwimming)
                 {
                     Character.PositionNoOffset = GTA.Math.Vector3.Lerp(

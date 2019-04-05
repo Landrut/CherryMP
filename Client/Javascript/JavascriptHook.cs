@@ -119,8 +119,10 @@ namespace CherryMP.Javascript
                 {
                     LogManager.LogException(ex, "DISPOSEAUDIO");
                 }
-            });
-            t.IsBackground = true;
+            })
+            {
+                IsBackground = true
+            };
             t.Start();
         }
     }
@@ -3636,8 +3638,10 @@ namespace CherryMP.Javascript
 
         public void setMarkerScale(LocalHandle marker, Vector3 scale)
         {
-            var delta = new Delta_MarkerProperties();
-            delta.Scale = scale;
+            var delta = new Delta_MarkerProperties
+            {
+                Scale = scale
+            };
 
             Main.NetEntityHandler.UpdateMarker(marker.Value, delta, true);
         }
@@ -3649,8 +3653,10 @@ namespace CherryMP.Javascript
 
         public void setMarkerDirection(LocalHandle marker, Vector3 dir)
         {
-            var delta = new Delta_MarkerProperties();
-            delta.Direction = dir;
+            var delta = new Delta_MarkerProperties
+            {
+                Direction = dir
+            };
 
             Main.NetEntityHandler.UpdateMarker(marker.Value, delta, true);
         }

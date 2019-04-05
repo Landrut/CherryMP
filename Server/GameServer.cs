@@ -3791,53 +3791,65 @@ namespace GTANResource
 
         public void DetachEntity(int nethandle, bool collision)
         {
-            var obj = new SyncEvent();
-            obj.EventType = (byte)ServerEventType.EntityDetachment;
-            obj.Arguments = ParseNativeArguments(nethandle, collision);
+            var obj = new SyncEvent
+            {
+                EventType = (byte)ServerEventType.EntityDetachment,
+                Arguments = ParseNativeArguments(nethandle, collision)
+            };
             SendToAll(obj, PacketType.ServerEvent, true, ConnectionChannel.EntityBackend);
         }
 
         public void SetPlayerOnSpectate(Client target, bool spectating)
         {
-            var obj = new SyncEvent();
-            obj.EventType = (byte)ServerEventType.PlayerSpectatorChange;
-            obj.Arguments = ParseNativeArguments(target.handle.Value, spectating);
+            var obj = new SyncEvent
+            {
+                EventType = (byte)ServerEventType.PlayerSpectatorChange,
+                Arguments = ParseNativeArguments(target.handle.Value, spectating)
+            };
 
             SendToAll(obj, PacketType.ServerEvent, true, ConnectionChannel.EntityBackend);
         }
 
         public void SetPlayerOnSpectatePlayer(Client spectator, Client target)
         {
-            var obj = new SyncEvent();
-            obj.EventType = (byte)ServerEventType.PlayerSpectatorChange;
-            obj.Arguments = ParseNativeArguments(spectator.handle.Value, true, target.handle.Value);
+            var obj = new SyncEvent
+            {
+                EventType = (byte)ServerEventType.PlayerSpectatorChange,
+                Arguments = ParseNativeArguments(spectator.handle.Value, true, target.handle.Value)
+            };
 
             SendToAll(obj, PacketType.ServerEvent, true, ConnectionChannel.EntityBackend);
         }
 
         public void PlayCustomPlayerAnimation(Client target, int flag, string animDict, string animName)
         {
-            var obj = new SyncEvent();
-            obj.EventType = (byte)ServerEventType.PlayerAnimationStart;
-            obj.Arguments = ParseNativeArguments(target.handle.Value, flag, animDict, animName);
+            var obj = new SyncEvent
+            {
+                EventType = (byte)ServerEventType.PlayerAnimationStart,
+                Arguments = ParseNativeArguments(target.handle.Value, flag, animDict, animName)
+            };
 
             SendToAll(obj, PacketType.ServerEvent, true, ConnectionChannel.EntityBackend);
         }
 
         public void PlayCustomPlayerAnimationStop(Client target)
         {
-            var obj = new SyncEvent();
-            obj.EventType = (byte)ServerEventType.PlayerAnimationStop;
-            obj.Arguments = ParseNativeArguments(target.handle.Value);
+            var obj = new SyncEvent
+            {
+                EventType = (byte)ServerEventType.PlayerAnimationStop,
+                Arguments = ParseNativeArguments(target.handle.Value)
+            };
 
             SendToAll(obj, PacketType.ServerEvent, true, ConnectionChannel.EntityBackend);
         }
 
         public void PlayCustomPlayerAnimationStop(Client target, string animDict, string animName)
         {
-            var obj = new SyncEvent();
-            obj.EventType = (byte)ServerEventType.PlayerAnimationStop;
-            obj.Arguments = ParseNativeArguments(target.handle.Value, animDict, animName);
+            var obj = new SyncEvent
+            {
+                EventType = (byte)ServerEventType.PlayerAnimationStop,
+                Arguments = ParseNativeArguments(target.handle.Value, animDict, animName)
+            };
 
             SendToAll(obj, PacketType.ServerEvent, true, ConnectionChannel.EntityBackend);
         }

@@ -16,8 +16,10 @@ namespace CherryMPServer
 
         public static void Init()
         {
-            Thread t = new Thread(Pulse);
-            t.IsBackground = true;
+            Thread t = new Thread(Pulse)
+            {
+                IsBackground = true
+            };
             t.Start();
         }
 
@@ -36,16 +38,20 @@ namespace CherryMPServer
 
         public static void CreatePlayer()
         {
-            var data = new Client(null);
-            data.Name = RandomString(10);
-            data.Fake = true;
+            var data = new Client(null)
+            {
+                Name = RandomString(10),
+                Fake = true
+            };
             data.CommitConnection();
 
             Players.Add(data);
             Program.ServerInstance.Clients.Add(data);
 
-            var delta = new Delta_PlayerProperties();
-            delta.Name = data.Name;
+            var delta = new Delta_PlayerProperties
+            {
+                Name = data.Name
+            };
             Program.ServerInstance.UpdateEntityInfo(data.handle.Value, EntityType.Player, delta, data);
 
             Program.Output("Adding player " + data.Name);

@@ -66,9 +66,6 @@
     <Reference Include="CherryMP.Shared">
       <HintPath>..\Shared\bin\Debug\CherryMP.Shared.dll</HintPath>
     </Reference>
-    <Reference Include="CherryMP.Updater">
-      <HintPath>..\libs\CherryMP.Updater.dll</HintPath>
-    </Reference>
     <Reference Include="Ionic.Zip, Version=1.9.8.0, Culture=neutral, PublicKeyToken=6583c7c814667745, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\libs\Ionic.Zip.dll</HintPath>
